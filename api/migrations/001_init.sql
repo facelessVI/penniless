@@ -1,5 +1,5 @@
--- v0 schema. Every key is composite because SimpleFIN guarantees transaction ids only within an
--- account and account ids only within a connection.
+-- v0 schema. Every key is composite because the provider guarantees transaction ids only within
+-- an account and account ids only within a connection.
 
 CREATE TABLE accounts (
     connection_id TEXT NOT NULL,
@@ -46,7 +46,8 @@ CREATE TABLE transactions (
 
 CREATE TABLE data_fetches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    connection_id TEXT NOT NULL,
+    -- Null when the fetch failed before the provider named a connection.
+    connection_id TEXT,
     window_start TEXT NOT NULL,
     window_end TEXT NOT NULL,
     fetched_at TEXT NOT NULL,

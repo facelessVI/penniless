@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app import db
 from app.config import settings
-from app.routers import setup
+from app.routers import accounts, setup
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
@@ -42,3 +42,4 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Penniless API", lifespan=lifespan)
 
 app.include_router(setup.router, prefix="/api")
+app.include_router(accounts.router, prefix="/api")

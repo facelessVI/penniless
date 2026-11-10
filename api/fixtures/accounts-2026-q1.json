@@ -1,0 +1,524 @@
+{
+  "window": {
+    "start_date": "2026-01-01",
+    "end_date": "2026-04-01"
+  },
+  "errlist": [],
+  "connections": [
+    {
+      "conn_id": "CON-FIXTURE-1",
+      "name": "Fixture Credit Union",
+      "org_id": "ORG-FIXTURE",
+      "org_name": "Fixture Credit Union",
+      "org_url": "https://fixture.invalid",
+      "sfin_url": "https://fixture.invalid/simplefin"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "ACT-CHECKING",
+      "name": "Everyday Checking",
+      "conn_id": "CON-FIXTURE-1",
+      "conn_name": "Fixture Credit Union",
+      "currency": "USD",
+      "balance": "6647.99",
+      "balance-date": 1774958400,
+      "transactions": [
+        {
+          "id": "act-checking-20260101-001",
+          "posted": 1767268800,
+          "amount": "-1850.00",
+          "description": "ACME PROPERTY MGMT RENT",
+          "transacted_at": 1767182400
+        },
+        {
+          "id": "act-checking-20260101-002",
+          "posted": 1767268800,
+          "amount": "-94.28",
+          "description": "CITY POWER & LIGHT",
+          "transacted_at": 1767182400
+        },
+        {
+          "id": "act-checking-20260103-003",
+          "posted": 1767441600,
+          "amount": "-69.99",
+          "description": "FIBERNET INTERNET",
+          "transacted_at": 1767355200
+        },
+        {
+          "id": "act-checking-20260104-004",
+          "posted": 1767528000,
+          "amount": "-400.00",
+          "description": "TRANSFER TO SAVINGS",
+          "transacted_at": 1767441600
+        },
+        {
+          "id": "act-checking-20260105-005",
+          "posted": 1767614400,
+          "amount": "-600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1767528000
+        },
+        {
+          "id": "act-checking-20260106-006",
+          "posted": 1767700800,
+          "amount": "-47.88",
+          "description": "SAFEWAY STORE 1123",
+          "transacted_at": 1767614400
+        },
+        {
+          "id": "act-checking-20260107-007",
+          "posted": 1767787200,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1767700800
+        },
+        {
+          "id": "act-checking-20260113-008",
+          "posted": 1768305600,
+          "amount": "-23.44",
+          "description": "CVS PHARMACY #8821",
+          "transacted_at": 1768219200
+        },
+        {
+          "id": "act-checking-20260120-009",
+          "posted": 1768910400,
+          "amount": "-61.07",
+          "description": "TRADER JOE'S #552",
+          "transacted_at": 1768824000
+        },
+        {
+          "id": "act-checking-20260121-010",
+          "posted": 1768996800,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1768910400
+        },
+        {
+          "id": "act-checking-20260127-011",
+          "posted": 1769515200,
+          "amount": "-38.99",
+          "description": "AMAZON MKTPLACE PMTS",
+          "transacted_at": 1769428800
+        },
+        {
+          "id": "act-checking-20260201-012",
+          "posted": 1769947200,
+          "amount": "-1850.00",
+          "description": "ACME PROPERTY MGMT RENT",
+          "transacted_at": 1769860800
+        },
+        {
+          "id": "act-checking-20260201-013",
+          "posted": 1769947200,
+          "amount": "-94.28",
+          "description": "CITY POWER & LIGHT",
+          "transacted_at": 1769860800
+        },
+        {
+          "id": "act-checking-20260203-014",
+          "posted": 1770120000,
+          "amount": "-69.99",
+          "description": "FIBERNET INTERNET",
+          "transacted_at": 1770033600
+        },
+        {
+          "id": "act-checking-20260204-015",
+          "posted": 1770206400,
+          "amount": "-400.00",
+          "description": "TRANSFER TO SAVINGS",
+          "transacted_at": 1770120000
+        },
+        {
+          "id": "act-checking-20260205-016",
+          "posted": 1770292800,
+          "amount": "-600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1770206400
+        },
+        {
+          "id": "act-checking-20260206-017",
+          "posted": 1770379200,
+          "amount": "-6.75",
+          "description": "STARBUCKS STORE 2291",
+          "transacted_at": 1770292800
+        },
+        {
+          "id": "act-checking-20260207-018",
+          "posted": 1770465600,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1770379200
+        },
+        {
+          "id": "act-checking-20260213-019",
+          "posted": 1770984000,
+          "amount": "-23.44",
+          "description": "CVS PHARMACY #8821",
+          "transacted_at": 1770897600
+        },
+        {
+          "id": "act-checking-20260220-020",
+          "posted": 1771588800,
+          "amount": "-23.44",
+          "description": "CVS PHARMACY #8821",
+          "transacted_at": 1771502400
+        },
+        {
+          "id": "act-checking-20260221-021",
+          "posted": 1771675200,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1771588800
+        },
+        {
+          "id": "act-checking-20260227-022",
+          "posted": 1772193600,
+          "amount": "-52.10",
+          "description": "SHELL OIL 5744291",
+          "transacted_at": 1772107200
+        },
+        {
+          "id": "act-checking-20260301-023",
+          "posted": 1772366400,
+          "amount": "-1850.00",
+          "description": "ACME PROPERTY MGMT RENT",
+          "transacted_at": 1772280000
+        },
+        {
+          "id": "act-checking-20260301-024",
+          "posted": 1772366400,
+          "amount": "-94.28",
+          "description": "CITY POWER & LIGHT",
+          "transacted_at": 1772280000
+        },
+        {
+          "id": "act-checking-20260303-025",
+          "posted": 1772539200,
+          "amount": "-69.99",
+          "description": "FIBERNET INTERNET",
+          "transacted_at": 1772452800
+        },
+        {
+          "id": "act-checking-20260304-026",
+          "posted": 1772625600,
+          "amount": "-400.00",
+          "description": "TRANSFER TO SAVINGS",
+          "transacted_at": 1772539200
+        },
+        {
+          "id": "act-checking-20260305-027",
+          "posted": 1772712000,
+          "amount": "-600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1772625600
+        },
+        {
+          "id": "act-checking-20260306-028",
+          "posted": 1772798400,
+          "amount": "-23.44",
+          "description": "CVS PHARMACY #8821",
+          "transacted_at": 1772712000
+        },
+        {
+          "id": "act-checking-20260307-029",
+          "posted": 1772884800,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1772798400
+        },
+        {
+          "id": "act-checking-20260313-030",
+          "posted": 1773403200,
+          "amount": "-23.44",
+          "description": "CVS PHARMACY #8821",
+          "transacted_at": 1773316800
+        },
+        {
+          "id": "act-checking-20260320-031",
+          "posted": 1774008000,
+          "amount": "-47.88",
+          "description": "SAFEWAY STORE 1123",
+          "transacted_at": 1773921600
+        },
+        {
+          "id": "act-checking-20260321-032",
+          "posted": 1774094400,
+          "amount": "2150.00",
+          "description": "ACME PAYROLL DIRECT DEP",
+          "transacted_at": 1774008000
+        },
+        {
+          "id": "act-checking-20260327-033",
+          "posted": 1774612800,
+          "amount": "-47.88",
+          "description": "SAFEWAY STORE 1123",
+          "transacted_at": 1774526400
+        }
+      ],
+      "extra": {
+        "type": "checking"
+      },
+      "available-balance": "6547.99"
+    },
+    {
+      "id": "ACT-SAVINGS",
+      "name": "Rainy Day Savings",
+      "conn_id": "CON-FIXTURE-1",
+      "conn_name": "Fixture Credit Union",
+      "currency": "USD",
+      "balance": "19653.72",
+      "balance-date": 1774958400,
+      "transactions": [
+        {
+          "id": "act-savings-20260104-001",
+          "posted": 1767528000,
+          "amount": "400.00",
+          "description": "TRANSFER FROM CHECKING",
+          "transacted_at": 1767441600
+        },
+        {
+          "id": "act-savings-20260128-002",
+          "posted": 1769601600,
+          "amount": "1.24",
+          "description": "INTEREST PAYMENT",
+          "transacted_at": 1769515200
+        },
+        {
+          "id": "act-savings-20260204-003",
+          "posted": 1770206400,
+          "amount": "400.00",
+          "description": "TRANSFER FROM CHECKING",
+          "transacted_at": 1770120000
+        },
+        {
+          "id": "act-savings-20260228-004",
+          "posted": 1772280000,
+          "amount": "1.24",
+          "description": "INTEREST PAYMENT",
+          "transacted_at": 1772193600
+        },
+        {
+          "id": "act-savings-20260304-005",
+          "posted": 1772625600,
+          "amount": "400.00",
+          "description": "TRANSFER FROM CHECKING",
+          "transacted_at": 1772539200
+        },
+        {
+          "id": "act-savings-20260328-006",
+          "posted": 1774699200,
+          "amount": "1.24",
+          "description": "INTEREST PAYMENT",
+          "transacted_at": 1774612800
+        }
+      ],
+      "extra": {
+        "type": "savings"
+      }
+    },
+    {
+      "id": "ACT-CREDIT",
+      "name": "Everyday Rewards Card",
+      "conn_id": "CON-FIXTURE-1",
+      "conn_name": "Fixture Credit Union",
+      "currency": "USD",
+      "balance": "-1042.00",
+      "balance-date": 1774958400,
+      "transactions": [
+        {
+          "id": "act-credit-20260105-001",
+          "posted": 1767614400,
+          "amount": "600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1767528000
+        },
+        {
+          "id": "act-credit-20260107-002",
+          "posted": 1767787200,
+          "amount": "-11.99",
+          "description": "SPOTIFY USA",
+          "transacted_at": 1767700800
+        },
+        {
+          "id": "act-credit-20260109-003",
+          "posted": 1767960000,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1767873600
+        },
+        {
+          "id": "act-credit-20260112-004",
+          "posted": 1768219200,
+          "amount": "-14.85",
+          "description": "CHIPOTLE 2251",
+          "transacted_at": 1768132800
+        },
+        {
+          "id": "act-credit-20260115-005",
+          "posted": 1768478400,
+          "amount": "-11.99",
+          "description": "SPOTIFY USA",
+          "transacted_at": 1768392000
+        },
+        {
+          "id": "act-credit-20260118-006",
+          "posted": 1768737600,
+          "amount": "-44.00",
+          "description": "PELOTON INTERACTIVE",
+          "transacted_at": 1768651200
+        },
+        {
+          "id": "act-credit-20260121-007",
+          "posted": 1768996800,
+          "amount": "-14.85",
+          "description": "CHIPOTLE 2251",
+          "transacted_at": 1768910400
+        },
+        {
+          "id": "act-credit-20260124-008",
+          "posted": 1769256000,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1769169600
+        },
+        {
+          "id": "act-credit-20260127-009",
+          "posted": 1769515200,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1769428800
+        },
+        {
+          "id": "act-credit-20260205-010",
+          "posted": 1770292800,
+          "amount": "600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1770206400
+        },
+        {
+          "id": "act-credit-20260207-011",
+          "posted": 1770465600,
+          "amount": "-286.40",
+          "description": "UNITED AIRLINES 016",
+          "transacted_at": 1770379200
+        },
+        {
+          "id": "act-credit-20260209-012",
+          "posted": 1770638400,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1770552000
+        },
+        {
+          "id": "act-credit-20260212-013",
+          "posted": 1770897600,
+          "amount": "-11.99",
+          "description": "SPOTIFY USA",
+          "transacted_at": 1770811200
+        },
+        {
+          "id": "act-credit-20260215-014",
+          "posted": 1771156800,
+          "amount": "-14.85",
+          "description": "CHIPOTLE 2251",
+          "transacted_at": 1771070400
+        },
+        {
+          "id": "act-credit-20260218-015",
+          "posted": 1771416000,
+          "amount": "-128.75",
+          "description": "REI CO-OP #0042",
+          "transacted_at": 1771329600
+        },
+        {
+          "id": "act-credit-20260221-016",
+          "posted": 1771675200,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1771588800
+        },
+        {
+          "id": "act-credit-20260224-017",
+          "posted": 1771934400,
+          "amount": "-286.40",
+          "description": "UNITED AIRLINES 016",
+          "transacted_at": 1771848000
+        },
+        {
+          "id": "act-credit-20260227-018",
+          "posted": 1772193600,
+          "amount": "-128.75",
+          "description": "REI CO-OP #0042",
+          "transacted_at": 1772107200
+        },
+        {
+          "id": "act-credit-20260305-019",
+          "posted": 1772712000,
+          "amount": "600.00",
+          "description": "CARD PAYMENT THANK YOU",
+          "transacted_at": 1772625600
+        },
+        {
+          "id": "act-credit-20260307-020",
+          "posted": 1772884800,
+          "amount": "-286.40",
+          "description": "UNITED AIRLINES 016",
+          "transacted_at": 1772798400
+        },
+        {
+          "id": "act-credit-20260309-021",
+          "posted": 1773057600,
+          "amount": "-44.00",
+          "description": "PELOTON INTERACTIVE",
+          "transacted_at": 1772971200
+        },
+        {
+          "id": "act-credit-20260312-022",
+          "posted": 1773316800,
+          "amount": "-128.75",
+          "description": "REI CO-OP #0042",
+          "transacted_at": 1773230400
+        },
+        {
+          "id": "act-credit-20260315-023",
+          "posted": 1773576000,
+          "amount": "-11.99",
+          "description": "SPOTIFY USA",
+          "transacted_at": 1773489600
+        },
+        {
+          "id": "act-credit-20260318-024",
+          "posted": 1773835200,
+          "amount": "-11.99",
+          "description": "SPOTIFY USA",
+          "transacted_at": 1773748800
+        },
+        {
+          "id": "act-credit-20260321-025",
+          "posted": 1774094400,
+          "amount": "-96.12",
+          "description": "HOME DEPOT #6421",
+          "transacted_at": 1774008000
+        },
+        {
+          "id": "act-credit-20260324-026",
+          "posted": 1774353600,
+          "amount": "-128.75",
+          "description": "REI CO-OP #0042",
+          "transacted_at": 1774267200
+        },
+        {
+          "id": "act-credit-20260327-027",
+          "posted": 1774612800,
+          "amount": "-286.40",
+          "description": "UNITED AIRLINES 016",
+          "transacted_at": 1774526400
+        }
+      ],
+      "extra": {
+        "type": "credit card"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 """SQLite access: connections, the migration runner, fixture reset, and SimpleFIN money parsing."""
 
 import sqlite3
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
@@ -27,6 +28,16 @@ def connect(database_path: Path | None = None) -> sqlite3.Connection:
     connection.execute("PRAGMA journal_mode = WAL")
 
     return connection
+
+
+def get_connection() -> Iterator[sqlite3.Connection]:
+    """FastAPI dependency: one connection per request, closed when the response is done."""
+    connection = connect()
+
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 def migration_files() -> list[Path]:
@@ -71,6 +82,11 @@ def apply_migration(connection: sqlite3.Connection, path: Path) -> None:
     except sqlite3.Error:
         connection.rollback()
         raise
+
+
+def now_iso() -> str:
+    """Timestamps land in SQLite as UTC; only calendar dates are local."""
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def reset_database(database_path: Path | None = None) -> None:
