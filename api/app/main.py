@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import db
+from app import categorize, db
 from app.config import settings
-from app.routers import accounts, setup
+from app.routers import accounts, categories, setup, transactions
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
@@ -22,6 +22,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.source == "fixture":
         db.reset_database()
         logger.info("rebuilt fixture database at %s", settings.database_path)
+
+    # A broken rules file fails startup rather than a fetch: SimpleFIN calls cost quota.
+    rules = categorize.load_rules()
+    logger.info("categories ready: %d categories, %d rules", len(rules.categories), len(rules.rules))
 
     connection = db.connect()
 
@@ -43,3 +47,5 @@ app = FastAPI(title="Penniless API", lifespan=lifespan)
 
 app.include_router(setup.router, prefix="/api")
 app.include_router(accounts.router, prefix="/api")
+app.include_router(transactions.router, prefix="/api")
+app.include_router(categories.router, prefix="/api")

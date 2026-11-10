@@ -135,3 +135,43 @@ class AccountResponse(BaseModel):
 
 class AccountUpdateRequest(BaseModel):
     include_in_cash: bool
+
+
+class SummaryResponse(BaseModel):
+    start: str
+    end: str
+    total_in_cents: int
+    total_out_cents: int
+    net_cents: int
+    cash_total_cents: int
+    uncategorized_count: int
+    transaction_count: int
+
+
+class TransactionItem(BaseModel):
+    connection_id: str
+    account_id: str
+    account_name: str
+    transaction_id: str
+    posted_date: str
+    description: str
+    category: str
+    amount_cents: int
+    is_transfer: bool
+
+
+class TransactionListResponse(BaseModel):
+    items: list[TransactionItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class CategoriesResponse(BaseModel):
+    categories: list[str]
+    uncategorized: str
+
+
+class ApplyCategoriesResponse(BaseModel):
+    updated: int
+    uncategorized: int

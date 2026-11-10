@@ -1,0 +1,75 @@
+# Category rules. Hand-edited: every change takes effect on the next ingest or on
+# POST /api/categories/apply, no restart needed.
+#
+# `categories` is the closed list. A rule may only assign a name declared here, and anything that
+# matches no rule lands in `Uncategorized`. Rules are tried in order and the first match wins.
+
+categories:
+    - Income
+    - Rent
+    - Utilities
+    - Groceries
+    - Dining
+    - Transport
+    - Shopping
+    - Health
+    - Subscriptions
+    - Transfers
+    - Uncategorized
+
+rules:
+    # Money in.
+    - match: { description: "^ACME PAYROLL" }
+      category: Income
+    - match: { description: "^INTEREST PAYMENT" }
+      category: Income
+
+    # Housing and bills.
+    - match: { description: "^ACME PROPERTY MGMT" }
+      category: Rent
+    - match: { description: "^CITY POWER" }
+      category: Utilities
+    - match: { description: "^FIBERNET" }
+      category: Utilities
+
+    # Groceries.
+    - match: { description: "^WHOLEFDS" }
+      category: Groceries
+    - match: { description: "^TRADER JOE" }
+      category: Groceries
+    - match: { description: "^SAFEWAY" }
+      category: Groceries
+
+    # Eating out.
+    - match: { description: "^CHIPOTLE" }
+      category: Dining
+    - match: { description: "^STARBUCKS" }
+      category: Dining
+
+    # Getting around.
+    - match: { description: "^SHELL OIL" }
+      category: Transport
+    - match: { description: "^UNITED AIRLINES" }
+      category: Transport
+
+    # Discretionary.
+    - match: { description: "^AMAZON" }
+      category: Shopping
+    - match: { description: "^HOME DEPOT" }
+      category: Shopping
+    - match: { description: "^REI CO-OP" }
+      category: Shopping
+
+    - match: { description: "^CVS PHARMACY" }
+      category: Health
+
+    - match: { description: "^(NETFLIX|SPOTIFY|PELOTON)" }
+      category: Subscriptions
+
+    # Transfers are flagged, not summed: they move money between your own accounts.
+    - match: { description: "^TRANSFER (TO|FROM) " }
+      category: Transfers
+      transfer: true
+    - match: { description: "^CARD PAYMENT" }
+      category: Transfers
+      transfer: true
