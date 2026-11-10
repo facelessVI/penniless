@@ -2,14 +2,15 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulatio
 import { DatePipe } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { AccountResponse } from "@shared/api/accounts/model";
-import { DashboardPageService } from "./dashboard.service";
+import { DashboardPageService, DashboardSortColumn, DashboardSortDirection } from "./dashboard.service";
 
 @Component({
 	selector: "penniless-dashboard",
-	imports: [DatePipe, RouterLink, MatButtonModule, MatSlideToggleModule, MatTableModule],
+	imports: [DatePipe, RouterLink, MatButtonModule, MatSlideToggleModule, MatSortModule, MatTableModule],
 	templateUrl: "./dashboard.page.html",
 	styleUrl: "./dashboard.page.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,5 +42,12 @@ export class DashboardPage implements OnInit, OnDestroy {
 
 	protected onCashToggle(account: AccountResponse, includeInCash: boolean): void {
 		this.service.setIncludeInCash(account, includeInCash);
+	}
+
+	protected onSortChange(event: Sort): void {
+		const column = event.direction === "" ? null : (event.active as DashboardSortColumn);
+		const direction = event.direction === "" ? null : (event.direction as DashboardSortDirection);
+
+		this.service.setSort(column, direction);
 	}
 }

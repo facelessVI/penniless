@@ -37,7 +37,16 @@ export class TransactionsPageService {
 
 	readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
 
+	private readonly customRangeComplete = computed(() => this.customStart() !== null && this.customEnd() !== null);
+
+	/** A custom range only queries once both ends are entered, so a half-typed range never hits the API. */
+	readonly awaitingCustomRange = computed(() => this.preset() === "custom" && !this.customRangeComplete());
+
 	readonly rangeLabel = computed(() => {
+		if (this.awaitingCustomRange()) {
+			return "Choose a date range";
+		}
+
 		const total = this.total();
 
 		if (total === 0) {
@@ -66,18 +75,28 @@ export class TransactionsPageService {
 	setPreset(preset: DatePreset): void {
 		this.preset.set(preset);
 		this.pageNumber.set(1);
+
+		// The custom preset always starts blank; it queries once both ends are entered.
+		if (preset === "custom") {
+			this.customStart.set(null);
+			this.customEnd.set(null);
+			this.clearRows();
+			return;
+		}
+
 		this.getPage();
 	}
 
-	setCustomStart(start: Date | null): void {
+	setCustomRange(start: Date | null, end: Date | null): void {
 		this.customStart.set(start);
-		this.pageNumber.set(1);
-		this.getPage();
-	}
-
-	setCustomEnd(end: Date | null): void {
 		this.customEnd.set(end);
 		this.pageNumber.set(1);
+
+		if (!this.customRangeComplete() || !this.isCustomRangeOrdered()) {
+			this.clearRows();
+			return;
+		}
+
 		this.getPage();
 	}
 
@@ -154,6 +173,19 @@ export class TransactionsPageService {
 		};
 	}
 
+	private clearRows(): void {
+		this.items.set([]);
+		this.total.set(0);
+		this.loading.set(false);
+	}
+
+	private isCustomRangeOrdered(): boolean {
+		const start = this.customStart();
+		const end = this.customEnd();
+
+		return start === null || end === null || start.getTime() <= end.getTime();
+	}
+
 	private resolveRange(): { start: string | null; end: string | null } {
 		const today = new Date();
 		const customStart = this.customStart();
@@ -172,10 +204,11 @@ export class TransactionsPageService {
 			case "year-to-date":
 				return { start: toIsoDate(new Date(today.getFullYear(), 0, 1)), end: toIsoDate(today) };
 			case "custom":
-				return {
-					start: customStart === null ? null : toIsoDate(customStart),
-					end: customEnd === null ? null : toIsoDate(customEnd),
-				};
+				if (customStart === null || customEnd === null) {
+					return { start: null, end: null };
+				}
+
+				return { start: toIsoDate(customStart), end: toIsoDate(customEnd) };
 		}
 	}
 }

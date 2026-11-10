@@ -119,6 +119,11 @@ penniless-dashboard {
 
 		.cell-money {
 			text-align: right;
+
+			/* The sort arrow sits inside a flex container, which ignores the header's text-align. */
+			.mat-sort-header-container {
+				justify-content: flex-end;
+			}
 		}
 
 		.mat-mdc-header-cell {
