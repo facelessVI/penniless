@@ -74,9 +74,11 @@ h3 {
 	background: var(--surface);
 }
 
-.mat-mdc-table {
+/* Material's component CSS lands after this file and sets `border: 0`, so match on the element. */
+table.mat-mdc-table {
 	border: 1px solid var(--border);
 	border-radius: var(--mat-sys-corner-small);
+	overflow: hidden;
 }
 
 /* Numbers line up column to column in every money table. */

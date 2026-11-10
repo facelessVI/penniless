@@ -9,7 +9,9 @@
 
 	<nav class="top-nav-links">
 		@for (link of links; track link.route) {
-			<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">{{ link.label }}</a>
+			<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{
+				link.label
+			}}</a>
 		}
 	</nav>
 </header>

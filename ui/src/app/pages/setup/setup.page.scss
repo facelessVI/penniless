@@ -1,13 +1,65 @@
 penniless-setup {
-	.page-body {
+	display: block;
+
+	.setup-page {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 1rem;
 		max-width: 640px;
 		margin: 3rem auto 0;
+		padding: 0 1.5rem;
 	}
 
 	.page-hint {
 		color: var(--text-muted);
+		line-height: 1.5;
+	}
+
+	a {
+		color: var(--mat-sys-primary);
+	}
+
+	.setup-warning {
+		margin: 0;
+		padding: 0.6rem 0.9rem;
+		border: 1px solid var(--border);
+		border-radius: var(--mat-sys-corner-small);
+		background: var(--surface-raised);
+		color: var(--text);
+	}
+
+	.setup-hint-fixture {
+		margin: 0;
+		color: var(--text-muted);
+
+		code {
+			font-size: 0.9em;
+		}
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+
+	.setup-token-field {
+		width: 100%;
+
+		textarea {
+			font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+			font-size: 0.8125rem;
+		}
+	}
+
+	.setup-error {
+		margin: 0;
+		padding: 0.6rem 0.9rem;
+		border: 1px solid var(--mat-sys-error);
+		border-radius: var(--mat-sys-corner-small);
+		background: var(--mat-sys-error-container);
+		color: var(--mat-sys-on-error-container);
+		align-self: stretch;
 	}
 }

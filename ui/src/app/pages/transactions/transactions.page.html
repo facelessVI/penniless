@@ -1,4 +1,119 @@
 <div class="page-body transactions-page">
-	<h1>Transactions</h1>
-	<p class="page-hint">Presets, filters, and the transaction table land here.</p>
+	<header class="page-header">
+		<div class="page-heading">
+			<h1>Transactions</h1>
+			<p class="page-hint">{{ service.rangeLabel() }}</p>
+		</div>
+	</header>
+
+	<div class="filters">
+		<mat-button-toggle-group [value]="service.preset()" (change)="onPresetChange($event)" hideSingleSelectionIndicator>
+			@for (preset of presets; track preset.value) {
+				<mat-button-toggle [value]="preset.value" [checked]="service.preset() === preset.value">{{ preset.label }}</mat-button-toggle>
+			}
+		</mat-button-toggle-group>
+
+		@if (service.preset() === "custom") {
+			<div class="custom-range">
+				<mat-form-field appearance="outline" subscriptSizing="dynamic">
+					<mat-label>From</mat-label>
+					<input matInput type="date" [value]="service.customStart() | date: 'yyyy-MM-dd'" (change)="onCustomStartChange($event)" />
+				</mat-form-field>
+				<mat-form-field appearance="outline" subscriptSizing="dynamic">
+					<mat-label>To</mat-label>
+					<input matInput type="date" [value]="service.customEnd() | date: 'yyyy-MM-dd'" (change)="onCustomEndChange($event)" />
+				</mat-form-field>
+			</div>
+		}
+
+		<div class="filter-row">
+			<mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+				<mat-label>Account</mat-label>
+				<mat-select [value]="service.accountId()" (selectionChange)="onAccountChange($event)">
+					<mat-option [value]="null">All accounts</mat-option>
+					@for (account of service.accounts(); track account.account_id) {
+						<mat-option [value]="account.account_id">{{ account.name }}</mat-option>
+					}
+				</mat-select>
+			</mat-form-field>
+
+			<mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+				<mat-label>Category</mat-label>
+				<mat-select [value]="service.category()" (selectionChange)="onCategoryChange($event)">
+					<mat-option [value]="null">All categories</mat-option>
+					@for (category of service.categories(); track category) {
+						<mat-option [value]="category">{{ category }}</mat-option>
+					}
+				</mat-select>
+			</mat-form-field>
+
+			<mat-slide-toggle [checked]="service.includeTransfers()" (change)="onTransfersChange($event)">Show transfers</mat-slide-toggle>
+		</div>
+	</div>
+
+	@if (service.rows().length > 0) {
+		<table mat-table [dataSource]="service.rows()" class="transactions-table">
+			<ng-container matColumnDef="date">
+				<th mat-header-cell *matHeaderCellDef>Date</th>
+				<td mat-cell *matCellDef="let row" class="cell-date">{{ row.posted_date }}</td>
+			</ng-container>
+
+			<ng-container matColumnDef="account">
+				<th mat-header-cell *matHeaderCellDef>Account</th>
+				<td mat-cell *matCellDef="let row" class="cell-muted">{{ row.account_name }}</td>
+			</ng-container>
+
+			<ng-container matColumnDef="description">
+				<th mat-header-cell *matHeaderCellDef>Description</th>
+				<td mat-cell *matCellDef="let row" [class.cell-transfer]="row.is_transfer">{{ row.description }}</td>
+			</ng-container>
+
+			<ng-container matColumnDef="category">
+				<th mat-header-cell *matHeaderCellDef>Category</th>
+				<td mat-cell *matCellDef="let row">
+					<span class="category-pill" [class.category-pill-transfer]="row.is_transfer">{{ row.category }}</span>
+				</td>
+			</ng-container>
+
+			<ng-container matColumnDef="amount">
+				<th mat-header-cell *matHeaderCellDef class="cell-money">Amount</th>
+				<td
+					mat-cell
+					*matCellDef="let row"
+					class="money"
+					[class.cell-transfer]="row.is_transfer"
+					[class.amount-in]="row.amount_cents > 0"
+					[class.amount-out]="row.amount_cents < 0"
+				>
+					{{ row.amountLabel }}
+				</td>
+			</ng-container>
+
+			<tr mat-header-row *matHeaderRowDef="transactionColumns"></tr>
+			<tr mat-row *matRowDef="let row; columns: transactionColumns" [class.row-transfer]="row.is_transfer"></tr>
+		</table>
+
+		<div class="pager">
+			<mat-form-field appearance="outline" subscriptSizing="dynamic" class="page-size">
+				<mat-label>Per page</mat-label>
+				<mat-select [value]="service.pageSize()" (selectionChange)="onPageSizeChange($event)">
+					@for (size of pageSizeOptions; track size) {
+						<mat-option [value]="size">{{ size }}</mat-option>
+					}
+				</mat-select>
+			</mat-form-field>
+
+			<span class="pager-range">{{ service.rangeLabel() }}</span>
+
+			<div class="pager-buttons">
+				<button mat-stroked-button type="button" [disabled]="service.pageNumber() <= 1" (click)="previousPage()">Previous</button>
+				<span class="pager-page">Page {{ service.pageNumber() }} of {{ service.totalPages() }}</span>
+				<button mat-stroked-button type="button" [disabled]="service.pageNumber() >= service.totalPages()" (click)="nextPage()">Next</button>
+			</div>
+		</div>
+	} @else if (service.loading()) {
+		<p class="page-hint">Loading transactions…</p>
+	} @else {
+		<p class="empty-state">No transactions in this range.</p>
+	}
 </div>

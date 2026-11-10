@@ -1,0 +1,28 @@
+export interface TransactionItem {
+	connection_id: string;
+	account_id: string;
+	account_name: string;
+	transaction_id: string;
+	posted_date: string;
+	description: string;
+	category: string;
+	amount_cents: number;
+	is_transfer: boolean;
+}
+
+export interface TransactionListResponse {
+	items: TransactionItem[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export interface TransactionQuery {
+	accountId?: string | null;
+	category?: string | null;
+	start?: string | null;
+	end?: string | null;
+	includeTransfers?: boolean;
+	limit?: number;
+	offset?: number;
+}

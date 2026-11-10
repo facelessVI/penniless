@@ -5,13 +5,14 @@ import { provideRouter } from "@angular/router";
 
 import { routes } from "./app.routes";
 import { errorInterceptor } from "@shared/interceptors/error.interceptor";
+import { loadingInterceptor } from "@shared/interceptors/loading.interceptor";
 
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideBrowserGlobalErrorListeners(),
 		provideZonelessChangeDetection(),
 		provideRouter(routes),
-		provideHttpClient(withInterceptors([errorInterceptor])),
+		provideHttpClient(withInterceptors([errorInterceptor, loadingInterceptor])),
 		provideNativeDateAdapter(),
 	],
 };

@@ -22,7 +22,10 @@ def connect(database_path: Path | None = None) -> sqlite3.Connection:
     path = database_path if database_path is not None else settings.database_path
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    connection = sqlite3.connect(path)
+    # FastAPI runs sync dependencies and sync endpoints on different threadpool threads, and the
+    # connection crosses between them. Each request owns its connection and touches it from one
+    # thread at a time, so disabling sqlite3's thread check is safe here.
+    connection = sqlite3.connect(path, check_same_thread=False)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA journal_mode = WAL")

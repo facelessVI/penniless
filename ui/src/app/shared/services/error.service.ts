@@ -9,6 +9,51 @@ export interface FormattedError {
 }
 
 const DEFAULT_ERROR_DURATION_MS = 5000;
+const UNKNOWN_ERROR_MESSAGE = "An unknown error has occurred.";
+
+function getFallbackMessage(status: number): string {
+	if (status === 0) {
+		return "Unable to reach the server. Check your connection and try again.";
+	}
+
+	return `An unknown error has occurred (${status}).`;
+}
+
+/* FastAPI reports problems as `detail`; this app's own envelopes would use `error`. */
+function getMessageFromBody(error: HttpErrorResponse): string | null {
+	const body: unknown = error.error;
+
+	if (body === null || typeof body !== "object") {
+		return null;
+	}
+
+	const detail = (body as { detail?: unknown }).detail;
+
+	if (typeof detail === "string" && detail.length > 0) {
+		return detail;
+	}
+
+	const message = (body as { error?: unknown }).error;
+
+	if (typeof message === "string" && message.length > 0) {
+		return message;
+	}
+
+	return null;
+}
+
+/** The message a person should read for any thrown value, whether or not it reached the banner. */
+export function extractErrorMessage(error: unknown): string {
+	if (error instanceof HttpErrorResponse) {
+		return getMessageFromBody(error) ?? getFallbackMessage(error.status);
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return UNKNOWN_ERROR_MESSAGE;
+}
 
 @Injectable({ providedIn: "root" })
 export class ErrorService {
@@ -19,7 +64,8 @@ export class ErrorService {
 	private dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
 	setError(error: unknown, durationMs: number = DEFAULT_ERROR_DURATION_MS): FormattedError {
-		const formattedError = this.formatError(error);
+		const status = error instanceof HttpErrorResponse ? error.status : 0;
+		const formattedError: FormattedError = { status, message: extractErrorMessage(error) };
 
 		this.clearDismissTimer();
 		this.activeErrorState.set(formattedError);
@@ -34,52 +80,6 @@ export class ErrorService {
 	clearError(): void {
 		this.clearDismissTimer();
 		this.activeErrorState.set(null);
-	}
-
-	private formatError(error: unknown): FormattedError {
-		if (error instanceof HttpErrorResponse) {
-			const status = error.status;
-			const message = this.getMessageFromBody(error) ?? this.getFallbackMessage(status);
-
-			return { status, message };
-		}
-
-		if (error instanceof Error) {
-			return { status: 0, message: error.message };
-		}
-
-		return { status: 0, message: "An unknown error has occurred." };
-	}
-
-	private getFallbackMessage(status: number): string {
-		if (status === 0) {
-			return "Unable to reach the server. Check your connection and try again.";
-		}
-
-		return `An unknown error has occurred (${status}).`;
-	}
-
-	/* FastAPI reports problems as `detail`; the older services here report them as `error`. */
-	private getMessageFromBody(error: HttpErrorResponse): string | null {
-		const body: unknown = error.error;
-
-		if (body === null || typeof body !== "object") {
-			return null;
-		}
-
-		const detail = (body as { detail?: unknown }).detail;
-
-		if (typeof detail === "string" && detail.length > 0) {
-			return detail;
-		}
-
-		const message = (body as { error?: unknown }).error;
-
-		if (typeof message === "string" && message.length > 0) {
-			return message;
-		}
-
-		return null;
 	}
 
 	private clearDismissTimer(): void {

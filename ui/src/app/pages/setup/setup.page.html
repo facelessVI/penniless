@@ -1,4 +1,39 @@
-<div class="page-body setup-page">
+<div class="setup-page">
 	<h1>Connect SimpleFIN</h1>
-	<p class="page-hint">Paste your setup token here. Nothing is saved until it is claimed.</p>
+
+	<p class="page-hint">
+		Create a token at
+		<a href="https://bridge.simplefin.org/simplefin/create" target="_blank" rel="noreferrer">the SimpleFIN Bridge</a>
+		and paste it here. Nothing is stored until the token is claimed, and the resulting access URL is written to this machine only.
+	</p>
+
+	@if (service.alreadyConnected) {
+		<p class="setup-warning">
+			This machine is already connected. Submitting a new token replaces the access URL and keeps your accounts and transaction history.
+		</p>
+	}
+
+	@if (isFixtureMode()) {
+		<p class="setup-hint-fixture">
+			Fixture mode is on, so no request leaves this machine. Use the demo token from <code>api/fixtures/README.md</code>.
+		</p>
+	}
+
+	<form [formGroup]="setupForm" (ngSubmit)="submit()">
+		<mat-form-field appearance="outline" class="setup-token-field">
+			<mat-label>Setup token</mat-label>
+			<textarea matInput formControlName="setupToken" rows="4" spellcheck="false" autocomplete="off"></textarea>
+			@if (setupForm.controls.setupToken.hasError("required")) {
+				<mat-error>A setup token is required.</mat-error>
+			}
+		</mat-form-field>
+
+		@if (service.errorMessage(); as errorMessage) {
+			<p class="setup-error" role="alert">{{ errorMessage }}</p>
+		}
+
+		<button mat-flat-button type="submit" [disabled]="service.connecting()">
+			{{ service.connecting() ? "Claiming…" : "Connect" }}
+		</button>
+	</form>
 </div>

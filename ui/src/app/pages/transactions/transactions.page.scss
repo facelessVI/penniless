@@ -1,11 +1,141 @@
 penniless-transactions {
+	display: block;
+
 	.page-body {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 1.25rem;
+	}
+
+	.page-heading {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 
 	.page-hint {
+		margin: 0;
 		color: var(--text-muted);
+	}
+
+	.filters {
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+
+		mat-button-toggle-group {
+			align-self: flex-start;
+		}
+	}
+
+	.custom-range {
+		display: flex;
+		gap: 0.75rem;
+
+		mat-form-field {
+			width: 170px;
+		}
+	}
+
+	.filter-row {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		flex-wrap: wrap;
+
+		.filter-field {
+			width: 200px;
+		}
+	}
+
+	.transactions-table {
+		width: 100%;
+
+		.cell-date {
+			white-space: nowrap;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.cell-muted {
+			color: var(--text-muted);
+		}
+
+		.cell-money {
+			text-align: right;
+		}
+
+		.mat-mdc-header-cell {
+			font: var(--mat-sys-label-medium);
+			color: var(--text-muted);
+		}
+
+		/* Transfers stay readable but recede, so they never read as income or spending. */
+		.row-transfer {
+			background: transparent;
+
+			.cell-transfer {
+				color: var(--transfer-muted);
+			}
+		}
+
+		.amount-in {
+			color: var(--mat-sys-primary);
+		}
+
+		.amount-out {
+			color: var(--mat-sys-error);
+		}
+	}
+
+	.category-pill {
+		display: inline-block;
+		padding: 0.1rem 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: var(--mat-sys-corner-full);
+		color: var(--text-muted);
+		font: var(--mat-sys-label-small);
+		white-space: nowrap;
+
+		&.category-pill-transfer {
+			border-style: dashed;
+			color: var(--transfer-muted);
+		}
+	}
+
+	.pager {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+
+		.page-size {
+			width: 110px;
+		}
+
+		.pager-range {
+			color: var(--text-muted);
+			font-variant-numeric: tabular-nums;
+		}
+
+		.pager-buttons {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+
+			.pager-page {
+				color: var(--text-muted);
+				font-variant-numeric: tabular-nums;
+			}
+		}
+	}
+
+	.empty-state {
+		margin: 0;
+		padding: 2rem 1.5rem;
+		border: 1px dashed var(--border);
+		border-radius: var(--mat-sys-corner-medium);
+		color: var(--text-muted);
+		text-align: center;
 	}
 }
