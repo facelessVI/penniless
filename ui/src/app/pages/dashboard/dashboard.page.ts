@@ -17,7 +17,7 @@ import { DashboardPageService } from "./dashboard.service";
 })
 export class DashboardPage implements OnInit, OnDestroy {
 	protected readonly service = inject(DashboardPageService);
-	protected readonly accountColumns = ["name", "connection", "balance", "available", "cash"];
+	protected readonly accountColumns = ["name", "connection", "balance", "cash"];
 
 	protected readonly refreshBlockedReason = computed(() => {
 		const status = this.service.status();
