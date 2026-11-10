@@ -23,6 +23,20 @@ export interface DashboardAccountRow extends AccountResponse {
 	balanceLabel: string;
 }
 
+export type DashboardSortColumn = "connection" | "balance";
+export type DashboardSortDirection = "asc" | "desc";
+
+const compareConnections = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
+	first.connection_name.localeCompare(second.connection_name) || first.name.localeCompare(second.name);
+
+const compareBalances = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
+	first.balance_cents - second.balance_cents || compareConnections(first, second);
+
+const SORT_COMPARATORS: Record<DashboardSortColumn, (first: DashboardAccountRow, second: DashboardAccountRow) => number> = {
+	connection: compareConnections,
+	balance: compareBalances,
+};
+
 const PERIOD_DATE_FORMAT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 const PERIOD_DATE_FORMAT_WITH_YEAR = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 
@@ -37,13 +51,26 @@ export class DashboardPageService {
 	readonly loading = signal(true);
 	readonly busy = signal(false);
 	readonly rulesMessage = signal<string | null>(null);
+	readonly sortColumn = signal<DashboardSortColumn | null>(null);
+	readonly sortDirection = signal<DashboardSortDirection | null>(null);
 
-	readonly accountRows = computed<DashboardAccountRow[]>(() =>
-		this.accounts().map((account) => ({
+	readonly accountRows = computed<DashboardAccountRow[]>(() => {
+		const rows = this.accounts().map((account) => ({
 			...account,
 			balanceLabel: formatCents(account.balance_cents, account.currency),
-		})),
-	);
+		}));
+		const column = this.sortColumn();
+		const direction = this.sortDirection();
+
+		if (column === null || direction === null) {
+			return rows;
+		}
+
+		const comparator = SORT_COMPARATORS[column];
+		const order = direction === "desc" ? -1 : 1;
+
+		return [...rows].sort((first, second) => order * comparator(first, second));
+	});
 
 	readonly summaryStrip = computed<DashboardSummaryStrip | null>(() => {
 		const summary = this.summary();
@@ -99,6 +126,11 @@ export class DashboardPageService {
 		});
 
 		this.statusService.refresh().subscribe({ next: () => undefined });
+	}
+
+	setSort(column: DashboardSortColumn | null, direction: DashboardSortDirection | null): void {
+		this.sortColumn.set(column);
+		this.sortDirection.set(direction);
 	}
 
 	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
@@ -169,6 +201,8 @@ export class DashboardPageService {
 		this.loading.set(true);
 		this.busy.set(false);
 		this.rulesMessage.set(null);
+		this.sortColumn.set(null);
+		this.sortDirection.set(null);
 	}
 
 	private refreshSummary(): void {
