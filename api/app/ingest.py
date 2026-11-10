@@ -1,5 +1,6 @@
 """Window planning, composite-key upserts, fetch bookkeeping, and the refresh guard."""
 
+import math
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
@@ -10,13 +11,23 @@ from app.config import settings
 from app.db import now_iso, parse_cents
 from app.errors import SimpleFinError, sanitize_message
 from app.schemas import SimpleFinAccount, SimpleFinConnection
+from app.schemas import SimpleFinError as SimpleFinErrorEntry
 from app.simplefin import AccountSource
 
 BACKFILL_MONTHS = 12
 DAYS_PER_MONTH = 30.44
-WINDOW_LENGTH_DAYS = 90
+
+# The Bridge counts a requested range inclusive of both of its dates and caps a request at 90
+# days, so windows are requested one day short of that: 89 days here is 90 days inclusive, which
+# leaves no headroom for the cap to trim an answer. Its 45-day figure is a recommendation, and
+# overrunning it produces a `gen.api` advisory rather than a failure (see ADVISORY_ERROR_CODES).
+WINDOW_LENGTH_DAYS = 89
 WINDOW_OVERLAP_DAYS = 5
 
+# `gen.api` is the protocol's developer-facing namespace: "Error in how the API is being used. This
+# is meant for the developer and not for the user." Every other code (`con.*`, `act.*`, `gen.auth`)
+# is a failure the user needs to see, because accounts or transactions may be missing.
+ADVISORY_ERROR_CODES = frozenset({"gen.api"})
 # SimpleFIN reports no account type. When the Bridge does supply `extra.type`, only these are
 # demoted out of the cash total; anything unknown or missing stays in, which keeps the total
 # conservative until it is corrected with the UI toggle.
@@ -139,16 +150,19 @@ def local_date(epoch_seconds: int) -> date:
 
 
 def plan_backfill_windows(months: int = BACKFILL_MONTHS, today: date | None = None) -> list[FetchWindow]:
-    """Oldest first, each 90 days long, each starting 85 days after the previous one."""
+    """Oldest first, covering `months` of calendar time: `WINDOW_LENGTH_DAYS` per fetch, overlapping."""
     reference = today or date.today()
-    window_count = max(1, round(months * DAYS_PER_MONTH / WINDOW_LENGTH_DAYS))
     step = timedelta(days=WINDOW_LENGTH_DAYS - WINDOW_OVERLAP_DAYS)
     length = timedelta(days=WINDOW_LENGTH_DAYS)
+    target = timedelta(days=months * DAYS_PER_MONTH)
     newest_end = reference + timedelta(days=1)
     newest_start = newest_end - length
 
-    windows: list[FetchWindow] = []
+    # The newest window covers `length` days and every older one adds another `step`, so derive the
+    # count from the span that has to be covered instead of rounding months into window lengths.
+    window_count = max(1, math.ceil((target - length) / step) + 1)
 
+    windows: list[FetchWindow] = []
     for index in range(window_count):
         start = newest_start - step * (window_count - 1 - index)
         windows.append(FetchWindow(start_date=start, end_date=start + length))
@@ -162,6 +176,14 @@ def plan_refresh_window(today: date | None = None) -> FetchWindow:
     end = reference + timedelta(days=1)
 
     return FetchWindow(start_date=end - timedelta(days=WINDOW_OVERLAP_DAYS), end_date=end)
+
+
+def classify_errors(errors: list[SimpleFinErrorEntry]) -> tuple[list[SimpleFinErrorEntry], list[SimpleFinErrorEntry]]:
+    """Split an Account Set's errlist into developer-only advisories and user-facing failures."""
+    advisories = [error for error in errors if error.code in ADVISORY_ERROR_CODES]
+    failures = [error for error in errors if error.code not in ADVISORY_ERROR_CODES]
+
+    return advisories, failures
 
 
 def resolve_connection(account: SimpleFinAccount, connections_by_id: dict[str, SimpleFinConnection]) -> tuple[str, str]:
@@ -251,6 +273,8 @@ def ingest_window(
         connection.commit()
         raise
 
+    advisories, failures = classify_errors(account_set.errlist)
+    reported_errors = failures or advisories
     connections_by_id = {item.conn_id: item for item in account_set.connections}
     connection_ids: set[str] = set()
     transaction_count = 0
@@ -266,10 +290,13 @@ def ingest_window(
             window,
             fetched_at=fetched_at,
             connection_id=next(iter(connection_ids)) if len(connection_ids) == 1 else None,
-            status="ok" if not account_set.errlist else "error",
+            # `status` answers "is this window's data usable", not "did the Bridge stay silent": a
+            # fetch that stored its accounts and transactions is `ok` even when the response carried
+            # an advisory. `refresh_guard` reads this column, so the distinction sets the quota guard.
+            status="ok" if not failures else "error",
             transaction_count=transaction_count,
-            error_code=",".join(sorted({item.code for item in account_set.errlist})) or None,
-            error_message=sanitize_message("; ".join(item.msg for item in account_set.errlist)) or None,
+            error_code=",".join(sorted({item.code for item in reported_errors})) or None,
+            error_message=sanitize_message("; ".join(item.msg for item in reported_errors)) or None,
         )
 
     return IngestResult(
