@@ -21,7 +21,6 @@ export interface DashboardSummaryStrip {
 
 export interface DashboardAccountRow extends AccountResponse {
 	balanceLabel: string;
-	availableLabel: string | null;
 }
 
 const PERIOD_DATE_FORMAT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -43,7 +42,6 @@ export class DashboardPageService {
 		this.accounts().map((account) => ({
 			...account,
 			balanceLabel: formatCents(account.balance_cents, account.currency),
-			availableLabel: account.available_balance_cents === null ? null : formatCents(account.available_balance_cents, account.currency),
 		})),
 	);
 
