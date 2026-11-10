@@ -94,14 +94,16 @@
 		</table>
 
 		<div class="pager">
-			<mat-form-field appearance="outline" subscriptSizing="dynamic" class="page-size">
-				<mat-label>Per page</mat-label>
-				<mat-select [value]="service.pageSize()" (selectionChange)="onPageSizeChange($event)">
-					@for (size of pageSizeOptions; track size) {
-						<mat-option [value]="size">{{ size }}</mat-option>
-					}
-				</mat-select>
-			</mat-form-field>
+			<div class="page-size">
+				<span class="page-size-label">Per page</span>
+				<mat-form-field appearance="outline" subscriptSizing="dynamic" class="page-size-field">
+					<mat-select [value]="service.pageSize()" (selectionChange)="onPageSizeChange($event)" aria-label="Rows per page">
+						@for (size of pageSizeOptions; track size) {
+							<mat-option [value]="size">{{ size }}</mat-option>
+						}
+					</mat-select>
+				</mat-form-field>
+			</div>
 
 			<span class="pager-range">{{ service.rangeLabel() }}</span>
 

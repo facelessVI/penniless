@@ -81,8 +81,10 @@ table.mat-mdc-table {
 	overflow: hidden;
 }
 
-/* Numbers line up column to column in every money table. */
-.money {
+/* Numbers line up column to column in every money table. Material's component CSS sets
+   `text-align: start` on cells after this file loads, so match on the element to outrank it. */
+td.money,
+th.money {
 	font-variant-numeric: tabular-nums;
 	text-align: right;
 	white-space: nowrap;

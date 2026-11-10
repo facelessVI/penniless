@@ -110,7 +110,15 @@ penniless-transactions {
 		flex-wrap: wrap;
 
 		.page-size {
-			width: 110px;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			color: var(--text-muted);
+			font: var(--mat-sys-body-small);
+
+			.page-size-field {
+				width: 76px;
+			}
 		}
 
 		.pager-range {
