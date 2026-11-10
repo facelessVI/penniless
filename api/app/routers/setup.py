@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter
 
-from app.config import DATABASE_PATH, SOURCE
+from app.config import settings
 
 router = APIRouter(tags=["setup"])
 
 
 @router.get("/health")
 def get_health() -> dict[str, str]:
-    return {"status": "ok", "source": SOURCE, "database": str(DATABASE_PATH)}
+    return {"status": "ok", "source": settings.source, "database": str(settings.database_path)}

@@ -6,8 +6,8 @@
 	"scripts": {
 		"dev": "concurrently --names api,ui --prefix-colors blue,green \"npm run dev:api:fixture\" \"npm run dev:ui\"",
 		"dev:live": "concurrently --names api,ui --prefix-colors blue,green \"npm run dev:api\" \"npm run dev:ui\"",
-		"dev:api": "cd api && uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
-		"dev:api:fixture": "cd api && PENNILESS_SOURCE=fixture uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+		"dev:api": "cd api && uv run uvicorn app.main:app --reload --reload-dir app --reload-dir migrations --host 127.0.0.1 --port 8000",
+		"dev:api:fixture": "cd api && PENNILESS_SOURCE=fixture uv run uvicorn app.main:app --reload --reload-dir app --reload-dir migrations --host 127.0.0.1 --port 8000",
 		"dev:ui": "cd ui && npm start",
 		"install:all": "npm install && cd api && uv sync && cd ../ui && npm install"
 	},
