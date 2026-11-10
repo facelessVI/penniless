@@ -1,0 +1,22 @@
+[project]
+name = "penniless-api"
+version = "0.1.0"
+description = "Local-only personal finance dashboard API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "httpx",
+    "pandas",
+    "pydantic",
+    "pyyaml",
+    "uvicorn[standard]",
+]
+
+[dependency-groups]
+dev = [
+    "pyright",
+    "ruff",
+]
+
+[tool.uv]
+package = false

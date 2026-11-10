@@ -1,0 +1,87 @@
+@use "@angular/material" as mat;
+
+html {
+	color-scheme: light dark;
+	-webkit-text-size-adjust: 100%;
+
+	@include mat.theme(
+		(
+			color: (
+				primary: mat.$green-palette,
+				tertiary: mat.$azure-palette,
+			),
+			typography: (
+				plain-family: (
+					Inter,
+					-apple-system,
+					BlinkMacSystemFont,
+					"Segoe UI",
+					Roboto,
+					Helvetica,
+					Arial,
+					sans-serif,
+				),
+				brand-family: (
+					Inter,
+					-apple-system,
+					BlinkMacSystemFont,
+					"Segoe UI",
+					Roboto,
+					Helvetica,
+					Arial,
+					sans-serif,
+				),
+			),
+			/* Denser rows: this app is mostly tables and compact status strips. */ density: -1,
+		)
+	);
+}
+
+/* App-level design tokens. Everything reads from these, never from a literal. */
+:root {
+	--surface: var(--mat-sys-surface);
+	--surface-raised: var(--mat-sys-surface-container);
+	--text: var(--mat-sys-on-surface);
+	--text-muted: var(--mat-sys-on-surface-variant);
+	--border: var(--mat-sys-outline-variant);
+	/* Transfers stay visible but recede, so they never read as income or spend. */
+	--transfer-muted: var(--mat-sys-outline);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--surface);
+	color: var(--text);
+	font: var(--mat-sys-body-medium);
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	font: var(--mat-sys-headline-small);
+}
+
+/* Material surfaces inherit the app background instead of painting their own. */
+.mat-mdc-card,
+.mat-mdc-table {
+	background: var(--surface);
+}
+
+.mat-mdc-table {
+	border: 1px solid var(--border);
+	border-radius: var(--mat-sys-corner-small);
+}
+
+/* Numbers line up column to column in every money table. */
+.money {
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	white-space: nowrap;
+}

@@ -1,0 +1,31 @@
+@if (loadingService.loading()) {
+	<div class="global-loading" role="progressbar" aria-label="Loading">
+		<span class="global-loading-bar"></span>
+	</div>
+}
+
+<header class="top-nav">
+	<a class="top-nav-brand" routerLink="/dashboard">Penniless</a>
+
+	<nav class="top-nav-links">
+		@for (link of links; track link.route) {
+			<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">{{ link.label }}</a>
+		}
+	</nav>
+</header>
+
+@if (errorService.activeError(); as error) {
+	<div class="error-banner" role="alert">
+		<span class="error-banner-message">{{ error.message }}</span>
+
+		<button class="error-banner-dismiss" type="button" aria-label="Dismiss error" (click)="errorService.clearError()">
+			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+				<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+			</svg>
+		</button>
+	</div>
+}
+
+<main class="content">
+	<router-outlet />
+</main>

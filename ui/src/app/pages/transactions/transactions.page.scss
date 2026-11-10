@@ -1,0 +1,11 @@
+penniless-transactions {
+	.page-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.page-hint {
+		color: var(--text-muted);
+	}
+}
