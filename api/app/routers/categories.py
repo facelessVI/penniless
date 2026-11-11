@@ -12,10 +12,12 @@ router = APIRouter(tags=["categories"])
 
 
 @router.get("/categories", response_model=CategoriesResponse)
-def list_categories() -> CategoriesResponse:
+def list_categories(
+    connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+) -> CategoriesResponse:
     try:
-        rules = categorize.load_rules()
-    except categorize.CategoryConfigError as error:
+        rules = categorize.load_rules(connection)
+    except categorize.CategoryRulesError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
     return CategoriesResponse(categories=list(rules.categories), uncategorized=categorize.UNCATEGORIZED_CATEGORY)
@@ -26,8 +28,8 @@ def apply_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> ApplyCategoriesResponse:
     try:
-        rules = categorize.load_rules()
-    except categorize.CategoryConfigError as error:
+        rules = categorize.load_rules(connection)
+    except categorize.CategoryRulesError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
     result = categorize.apply_rules(connection, rules)

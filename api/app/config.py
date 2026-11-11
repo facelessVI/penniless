@@ -7,7 +7,6 @@ from typing import Literal, cast
 
 API_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = API_DIR / "migrations"
-CATEGORIES_PATH = API_DIR / "categories.yaml"
 
 Source = Literal["live", "fixture"]
 
@@ -51,7 +50,6 @@ class Settings:
     data_dir: Path
     database_path: Path
     fixture_dir: Path
-    categories_path: Path
     refresh_min_interval_hours: float
 
     @staticmethod
@@ -64,7 +62,6 @@ class Settings:
             data_dir=data_dir,
             database_path=_path_from_env("PENNILESS_DB_PATH", data_dir / DATABASE_FILENAMES[source]),
             fixture_dir=_path_from_env("PENNILESS_FIXTURE_DIR", API_DIR / "fixtures"),
-            categories_path=_path_from_env("PENNILESS_CATEGORIES_PATH", CATEGORIES_PATH),
             refresh_min_interval_hours=_parse_hours(
                 "PENNILESS_REFRESH_MIN_INTERVAL_HOURS", DEFAULT_REFRESH_MIN_INTERVAL_HOURS
             ),
