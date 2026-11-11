@@ -5,15 +5,30 @@
 }
 
 <header class="top-nav">
-	<a class="top-nav-brand" routerLink="/dashboard">Penniless</a>
+	<div class="top-nav-inner">
+		<a class="top-nav-brand" routerLink="/dashboard">Penniless</a>
 
-	<nav class="top-nav-links">
-		@for (link of links; track link.route) {
-			<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{
-				link.label
-			}}</a>
-		}
-	</nav>
+		<nav class="top-nav-links">
+			@for (link of links; track link.route) {
+				<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{
+					link.label
+				}}</a>
+			}
+		</nav>
+
+		<button class="top-nav-settings" mat-icon-button type="button" aria-label="Settings" [matMenuTriggerFor]="settingsMenu">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="3" />
+				<path
+					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+				/>
+			</svg>
+		</button>
+
+		<mat-menu #settingsMenu="matMenu" xPosition="before">
+			<button mat-menu-item type="button" routerLink="/settings/categories">Categories</button>
+		</mat-menu>
+	</div>
 </header>
 
 @if (errorService.activeError(); as error) {

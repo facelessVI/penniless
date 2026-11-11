@@ -1,0 +1,28 @@
+penniless-settings-categories {
+	display: block;
+
+	.page-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.page-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.page-heading {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.page-hint {
+		margin: 0;
+		color: var(--text-muted);
+	}
+}
