@@ -16,6 +16,13 @@ DATABASE_FILENAMES: dict[Source, str] = {
     "fixture": "penniless-dev.sqlite",
 }
 
+# One credential per mode for the same reason: a fixture claim stores a placeholder that can never
+# resolve, so letting it take the live file's place silently breaks every real fetch.
+CREDENTIALS_FILENAMES: dict[Source, str] = {
+    "live": "credentials-live.json",
+    "fixture": "credentials-fixture.json",
+}
+
 DEFAULT_REFRESH_MIN_INTERVAL_HOURS = 6.0
 
 
