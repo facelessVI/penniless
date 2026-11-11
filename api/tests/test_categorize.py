@@ -289,3 +289,208 @@ def test_assign_category_rejects_an_unknown_transaction_and_writes_nothing() -> 
 
     assert rule_count(connection) == 0
     assert stored_category(connection, "TX-1") == categorize.UNCATEGORIZED_CATEGORY
+
+
+def category_names(connection: sqlite3.Connection) -> list[str]:
+    return [summary.name for summary in categorize.list_categories(connection)]
+
+
+def category_positions(connection: sqlite3.Connection) -> dict[str, int]:
+    return {summary.name: summary.position for summary in categorize.list_categories(connection)}
+
+
+def test_list_categories_reports_counts_and_the_protected_names() -> None:
+    """The list the management page renders: display order, usage counts, and which names are built in."""
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA", "Subscriptions")
+    seed_transaction(connection, "TX-2", "SPOTIFY USA", "Subscriptions")
+    seed_transaction(connection, "TX-3", "CORNER STORE")
+    seed_rule(connection, "SPOTIFY USA", "Subscriptions")
+
+    summaries = categorize.list_categories(connection)
+    by_name = {summary.name: summary for summary in summaries}
+
+    assert [summary.name for summary in summaries] == list(DECLARED_CATEGORIES)
+    assert [summary.position for summary in summaries] == list(range(1, 12))
+    assert by_name["Subscriptions"].transaction_count == 2
+    assert by_name["Subscriptions"].rule_count == 1
+    assert by_name["Uncategorized"].transaction_count == 1
+    assert by_name["Uncategorized"].rule_count == 0
+    assert {summary.name for summary in summaries if summary.is_protected} == {
+        categorize.TRANSFERS_CATEGORY,
+        categorize.UNCATEGORIZED_CATEGORY,
+    }
+
+
+def test_create_category_trims_the_name_and_appends_to_the_order() -> None:
+    connection = make_connection()
+
+    categorize.create_category(connection, "  Pets  ")
+
+    created = categorize.list_categories(connection)[-1]
+
+    assert created.name == "Pets"
+    assert created.position == 12
+    assert created.transaction_count == 0
+    assert created.rule_count == 0
+    assert not created.is_protected
+
+
+@pytest.mark.parametrize("name", ["Groceries", "groceries", "GROCERIES"])
+def test_create_category_rejects_a_name_that_is_already_taken(name: str) -> None:
+    """Case-insensitively, matching the unique index: two look-alike options in a select is a trap."""
+    connection = make_connection()
+
+    with pytest.raises(categorize.CategoryNameError, match="already a category"):
+        categorize.create_category(connection, name)
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+@pytest.mark.parametrize("name", ["", "   ", "x" * 41])
+def test_create_category_rejects_an_empty_or_overlong_name(name: str) -> None:
+    connection = make_connection()
+
+    with pytest.raises(categorize.CategoryNameError):
+        categorize.create_category(connection, name)
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_create_category_rejects_a_slash() -> None:
+    """`/api/categories/{name}` cannot address a name holding a slash, so it is refused at the door."""
+    connection = make_connection()
+
+    with pytest.raises(categorize.CategoryNameError, match="slash"):
+        categorize.create_category(connection, "Food/Drink")
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_rename_category_moves_its_rules_and_transactions() -> None:
+    """`ON UPDATE CASCADE` does the relabel, so no reclassify pass runs and no position changes."""
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA", "Subscriptions")
+    seed_rule(connection, "SPOTIFY USA", "Subscriptions")
+
+    categorize.rename_category(connection, "Subscriptions", "Streaming")
+
+    by_name = {summary.name: summary for summary in categorize.list_categories(connection)}
+
+    assert "Subscriptions" not in by_name
+    assert by_name["Streaming"].position == 9
+    assert by_name["Streaming"].transaction_count == 1
+    assert by_name["Streaming"].rule_count == 1
+    assert stored_category(connection, "TX-1") == "Streaming"
+    assert categorize.load_rules(connection).rules == {"SPOTIFY USA": "Streaming"}
+
+
+def test_rename_category_allows_a_case_change_of_the_same_name() -> None:
+    connection = make_connection()
+
+    categorize.rename_category(connection, "Groceries", "GROCERIES")
+
+    assert "GROCERIES" in category_names(connection)
+    assert "Groceries" not in category_names(connection)
+
+
+def test_rename_category_rejects_a_taken_name() -> None:
+    connection = make_connection()
+
+    with pytest.raises(categorize.CategoryNameError, match="already a category"):
+        categorize.rename_category(connection, "Groceries", "dining")
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+@pytest.mark.parametrize("name", [categorize.TRANSFERS_CATEGORY, categorize.UNCATEGORIZED_CATEGORY])
+def test_rename_category_refuses_a_protected_name(name: str) -> None:
+    connection = make_connection()
+
+    with pytest.raises(categorize.ProtectedCategoryError, match="cannot be renamed or deleted"):
+        categorize.rename_category(connection, name, "Something Else")
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_rename_category_rejects_an_unknown_name() -> None:
+    """Category names are identifiers: `groceries` is not `Groceries`."""
+    connection = make_connection()
+
+    with pytest.raises(categorize.UnknownCategoryError, match="Unknown category"):
+        categorize.rename_category(connection, "groceries", "Food")
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_delete_category_moves_transactions_and_drops_its_rules() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA", "Subscriptions")
+    seed_transaction(connection, "TX-2", "SPOTIFY USA", "Subscriptions")
+    seed_transaction(connection, "TX-3", "CORNER STORE", "Groceries")
+    seed_rule(connection, "SPOTIFY USA", "Subscriptions")
+    seed_rule(connection, "CORNER STORE", "Groceries")
+
+    result = categorize.delete_category(connection, "Subscriptions")
+
+    by_name = {summary.name: summary for summary in categorize.list_categories(connection)}
+
+    assert result.moved_transactions == 2
+    assert result.deleted_rules == 1
+    assert "Subscriptions" not in by_name
+    assert stored_category(connection, "TX-1") == categorize.UNCATEGORIZED_CATEGORY
+    assert stored_category(connection, "TX-2") == categorize.UNCATEGORIZED_CATEGORY
+    assert stored_category(connection, "TX-3") == "Groceries"
+    assert by_name["Uncategorized"].transaction_count == 2
+    assert by_name["Uncategorized"].rule_count == 0
+    assert categorize.load_rules(connection).rules == {"CORNER STORE": "Groceries"}
+    assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+    # Nothing needs reclassifying afterwards: the reassignment already matches the rules that are left.
+    assert categorize.apply_rules(connection, categorize.load_rules(connection)).updated == 0
+
+
+def test_delete_category_reports_zero_when_nothing_uses_it() -> None:
+    connection = make_connection()
+
+    result = categorize.delete_category(connection, "Health")
+
+    assert result.moved_transactions == 0
+    assert result.deleted_rules == 0
+    assert "Health" not in category_names(connection)
+
+
+def test_deleting_a_category_leaves_its_position_gap_in_place() -> None:
+    """Positions order the selects; a gap is harmless and reusing the slot would reorder the list."""
+    connection = make_connection()
+
+    categorize.delete_category(connection, "Dining")
+    categorize.create_category(connection, "Pets")
+
+    positions = category_positions(connection)
+
+    assert positions["Pets"] == 12
+    assert "Dining" not in positions
+    assert positions["Transport"] == 6
+
+
+@pytest.mark.parametrize("name", [categorize.TRANSFERS_CATEGORY, categorize.UNCATEGORIZED_CATEGORY])
+def test_delete_category_refuses_a_protected_name(name: str) -> None:
+    connection = make_connection()
+
+    with pytest.raises(categorize.ProtectedCategoryError, match="cannot be renamed or deleted"):
+        categorize.delete_category(connection, name)
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_delete_category_rejects_an_unknown_name() -> None:
+    connection = make_connection()
+
+    with pytest.raises(categorize.UnknownCategoryError, match="Unknown category"):
+        categorize.delete_category(connection, "groceries")
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)

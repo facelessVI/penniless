@@ -78,7 +78,7 @@ export class TransactionsPageService {
 		this.apiClient.accounts.standard.getAccounts().subscribe({ next: (accounts) => this.accounts.set(accounts) });
 
 		this.apiClient.categories.standard.getCategories().subscribe({
-			next: (response) => this.categories.set(response.categories),
+			next: (response) => this.categories.set(response.categories.map((category) => category.name)),
 		});
 	}
 

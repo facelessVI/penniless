@@ -1,6 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { ApplyCategoriesResponse, CategoriesResponse } from "./model";
+import { ApplyCategoriesResponse, CategoriesResponse, CategoryDeleteResponse, CategoryNameContract } from "./model";
 
 @Injectable({ providedIn: "root" })
 export class CategoriesStandardService {
@@ -10,6 +10,26 @@ export class CategoriesStandardService {
 		const url = "/api/categories";
 
 		return this.http.get<CategoriesResponse>(url);
+	}
+
+	createCategory(contract: CategoryNameContract) {
+		const url = "/api/categories";
+		const body = contract;
+
+		return this.http.post<CategoriesResponse>(url, body);
+	}
+
+	renameCategory(name: string, contract: CategoryNameContract) {
+		const url = `/api/categories/${encodeURIComponent(name)}`;
+		const body = contract;
+
+		return this.http.patch<CategoriesResponse>(url, body);
+	}
+
+	deleteCategory(name: string) {
+		const url = `/api/categories/${encodeURIComponent(name)}`;
+
+		return this.http.delete<CategoryDeleteResponse>(url);
 	}
 
 	applyCategories() {

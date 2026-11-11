@@ -1,0 +1,12 @@
+:host {
+	display: block;
+
+	.name-field {
+		width: 100%;
+	}
+
+	mat-dialog-actions {
+		/* Cancel on the left, Create or Save on the right: two choices, not one cluster. */
+		--mat-dialog-actions-alignment: space-between;
+	}
+}
