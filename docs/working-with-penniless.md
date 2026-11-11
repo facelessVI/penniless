@@ -90,6 +90,9 @@ Categories and rules live in SQLite, in two tables: `categories` (the closed lis
 that is the order the selects show) and `rules` (one row per exact transaction description). There is
 no file to edit.
 
+- **Settings** -> **Categories** (the gear at the right of the top nav, `/settings/categories`) is a
+  placeholder. There is no management UI yet, so the `categories` table is still edited only in
+  SQLite: adding, renaming, reordering, or deleting a category has no screen.
 - Click any transaction row on the **Transactions** page to open **Transaction**, pick a category, and
   save. Every stored row with that exact description moves with it, and rows fetched later arrive
   already categorized. The select opens on the row's current category, so re-picking is a correction.
