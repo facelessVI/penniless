@@ -90,9 +90,21 @@ Categories and rules live in SQLite, in two tables: `categories` (the closed lis
 that is the order the selects show) and `rules` (one row per exact transaction description). There is
 no file to edit.
 
-- **Settings** -> **Categories** (the gear at the right of the top nav, `/settings/categories`) is a
-  placeholder. There is no management UI yet, so the `categories` table is still edited only in
-  SQLite: adding, renaming, reordering, or deleting a category has no screen.
+- **Settings** -> **Categories** (the gear at the right of the top nav, `/settings/categories`) is
+  where categories are managed. The page lists every category in the order the selects show them,
+  with how many transactions and rules currently carry it.
+    - **Create category** opens a dialog with one name field and appends the category to the end of
+      the list.
+    - The pencil renames, through the same dialog. The rename cascades to every rule and transaction
+      that carries the name, so nothing needs reclassifying afterwards.
+    - The trashcan asks first, then deletes. Deleting a category that is in use moves its
+      transactions to `Uncategorized` and deletes the rules that pointed at it; the confirmation says
+      how many of each will move. No transaction is lost.
+    - `Transfers` and `Uncategorized` cannot be renamed or deleted: the first is how the app
+      recognizes a transfer, and the second is where unmatched transactions land.
+    - A name is trimmed, may not be blank or contain a slash, may be at most 40 characters, and may
+      not collide with an existing name in any case. Reordering is not built: new categories go to
+      the end.
 - Click any transaction row on the **Transactions** page to open **Transaction**, pick a category, and
   save. Every stored row with that exact description moves with it, and rows fetched later arrive
   already categorized. The select opens on the row's current category, so re-picking is a correction.
