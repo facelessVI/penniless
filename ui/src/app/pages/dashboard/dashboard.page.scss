@@ -84,7 +84,6 @@ penniless-dashboard {
 			font: var(--mat-sys-headline-small);
 			font-variant-numeric: tabular-nums;
 			color: var(--text);
-			text-decoration: none;
 		}
 
 		.summary-in {
@@ -94,10 +93,6 @@ penniless-dashboard {
 		.summary-out {
 			color: var(--mat-sys-error);
 		}
-	}
-
-	.summary-card-uncategorized a:hover {
-		text-decoration: underline;
 	}
 
 	.accounts {

@@ -14,7 +14,7 @@ export interface DashboardSummaryStrip {
 	totalOut: string;
 	net: string;
 	cash: string;
-	uncategorizedCount: number;
+	netWorth: string;
 	transactionCount: number;
 	periodLabel: string;
 }
@@ -84,7 +84,7 @@ export class DashboardPageService {
 			totalOut: formatCents(summary.total_out_cents),
 			net: formatSignedCents(summary.net_cents),
 			cash: formatCents(summary.cash_total_cents),
-			uncategorizedCount: summary.uncategorized_count,
+			netWorth: formatCents(summary.net_worth_cents),
 			transactionCount: summary.transaction_count,
 			periodLabel: this.formatPeriod(summary.start, summary.end),
 		};

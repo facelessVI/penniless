@@ -5,6 +5,6 @@ export interface SummaryResponse {
 	total_out_cents: number;
 	net_cents: number;
 	cash_total_cents: number;
-	uncategorized_count: number;
+	net_worth_cents: number;
 	transaction_count: number;
 }
