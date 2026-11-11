@@ -90,6 +90,9 @@ Categories and rules live in SQLite, in two tables: `categories` (the closed lis
 that is the order the selects show) and `rules` (one row per exact transaction description). There is
 no file to edit.
 
+- Click any transaction row on the **Transactions** page to open **Transaction**, pick a category, and
+  save. Every stored row with that exact description moves with it, and rows fetched later arrive
+  already categorized. The select opens on the row's current category, so re-picking is a correction.
 - A rule matches the whole description. `SPOTIFY USA` and `SPOTIFY USA 877-7781161 NY` are different
   merchants, so a merchant whose description changes has to be taught again.
 - Anything without a rule is `Uncategorized`, and `Uncategorized` is a selectable category, so

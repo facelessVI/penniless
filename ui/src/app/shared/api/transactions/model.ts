@@ -7,7 +7,6 @@ export interface TransactionItem {
 	description: string;
 	category: string;
 	amount_cents: number;
-	is_transfer: boolean;
 }
 
 export interface TransactionListResponse {
@@ -15,6 +14,19 @@ export interface TransactionListResponse {
 	total: number;
 	limit: number;
 	offset: number;
+}
+
+export interface TransactionCategoryContract {
+	connection_id: string;
+	account_id: string;
+	transaction_id: string;
+	category: string;
+}
+
+export interface TransactionCategoryResponse {
+	description: string;
+	category: string;
+	updated: number;
 }
 
 export interface TransactionQuery {

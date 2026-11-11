@@ -157,7 +157,6 @@ class TransactionItem(BaseModel):
     description: str
     category: str
     amount_cents: int
-    is_transfer: bool
 
 
 class TransactionListResponse(BaseModel):

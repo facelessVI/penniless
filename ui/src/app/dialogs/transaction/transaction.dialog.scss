@@ -1,0 +1,42 @@
+penniless-transaction-dialog {
+	display: block;
+
+	.transaction-details {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 0.35rem 1rem;
+		margin: 0 0 1.25rem;
+
+		dt {
+			color: var(--text-muted);
+			font: var(--mat-sys-label-medium);
+		}
+
+		dd {
+			margin: 0;
+			overflow-wrap: anywhere;
+		}
+	}
+
+	.amount {
+		font-variant-numeric: tabular-nums;
+
+		&.amount-in {
+			color: var(--mat-sys-primary);
+		}
+
+		&.amount-out {
+			color: var(--mat-sys-error);
+		}
+	}
+
+	.category-field {
+		width: 100%;
+	}
+
+	.match-note {
+		margin: 0.75rem 0 0;
+		color: var(--text-muted);
+		font: var(--mat-sys-body-small);
+	}
+}

@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>Transaction</h2>
+
+<mat-dialog-content>
+	<dl class="transaction-details">
+		<dt>Date</dt>
+		<dd>{{ data.transaction.posted_date }}</dd>
+
+		<dt>Account</dt>
+		<dd>{{ data.transaction.account_name }}</dd>
+
+		<dt>Description</dt>
+		<dd>{{ data.transaction.description }}</dd>
+
+		<dt>Amount</dt>
+		<dd class="amount" [class.amount-in]="data.transaction.amount_cents > 0" [class.amount-out]="data.transaction.amount_cents < 0">
+			{{ amountLabel }}
+		</dd>
+	</dl>
+
+	<mat-form-field appearance="outline" subscriptSizing="dynamic" class="category-field">
+		<mat-label>Category</mat-label>
+		<mat-select [value]="selectedCategory()" (selectionChange)="onCategoryChange($event)">
+			@for (category of data.categories; track category) {
+				<mat-option [value]="category">{{ category }}</mat-option>
+			}
+		</mat-select>
+	</mat-form-field>
+
+	<p class="match-note">Every transaction with this exact description moves with it, including ones fetched later.</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+	<button mat-stroked-button type="button" mat-dialog-close [disabled]="loading()">Cancel</button>
+	<button mat-flat-button type="button" [disabled]="loading() || isUnchanged()" (click)="save()">Save</button>
+</mat-dialog-actions>

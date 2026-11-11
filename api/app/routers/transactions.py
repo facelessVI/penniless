@@ -148,7 +148,6 @@ def list_transactions(
             description=row["description"],
             category=row["category"],
             amount_cents=row["amount_cents"],
-            is_transfer=row["category"] == categorize.TRANSFERS_CATEGORY,
         )
         for row in rows
     ]

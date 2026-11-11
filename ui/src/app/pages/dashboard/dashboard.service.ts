@@ -173,7 +173,7 @@ export class DashboardPageService {
 			next: (result) => {
 				this.busy.set(false);
 				this.rulesMessage.set(
-					`Rules applied: ${result.updated} transaction${result.updated === 1 ? "" : "s"} re-categorized, ${result.uncategorized} left uncategorized.`,
+					`${result.updated} transaction${result.updated === 1 ? "" : "s"} re-categorized, ${result.uncategorized} left uncategorized.`,
 				);
 				this.load();
 			},

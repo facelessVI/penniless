@@ -69,6 +69,20 @@ penniless-transactions {
 			color: var(--text-muted);
 		}
 
+		/* A row opens the transaction dialog, so it reads as an actionable target by mouse and keyboard. */
+		tr.mat-mdc-row {
+			cursor: pointer;
+
+			&:hover {
+				background: var(--surface-raised);
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--mat-sys-primary);
+				outline-offset: -2px;
+			}
+		}
+
 		/* Transfers stay readable but recede, so they never read as income or spending. */
 		.row-transfer {
 			background: transparent;
