@@ -143,7 +143,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 	}
 
 	private openTransactionDialog(row: TransactionRow): void {
-		const dialogWidth = "26rem";
+		const dialogWidth = "34rem";
 		const data: TransactionDialogData = { transaction: row, categories: this.service.categories() };
 		const dialogRef = this.dialog.open(TransactionDialog, { width: dialogWidth, data });
 

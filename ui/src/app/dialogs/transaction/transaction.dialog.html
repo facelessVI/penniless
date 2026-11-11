@@ -9,7 +9,7 @@
 		<dd>{{ data.transaction.account_name }}</dd>
 
 		<dt>Description</dt>
-		<dd>{{ data.transaction.description }}</dd>
+		<dd class="description">{{ data.transaction.description }}</dd>
 
 		<dt>Amount</dt>
 		<dd class="amount" [class.amount-in]="data.transaction.amount_cents > 0" [class.amount-out]="data.transaction.amount_cents < 0">
@@ -29,7 +29,7 @@
 	<p class="match-note">Every transaction with this exact description moves with it, including ones fetched later.</p>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions>
 	<button mat-stroked-button type="button" mat-dialog-close [disabled]="loading()">Cancel</button>
 	<button mat-flat-button type="button" [disabled]="loading() || isUnchanged()" (click)="save()">Save</button>
 </mat-dialog-actions>
