@@ -7,7 +7,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app import categorize, db
-from app.schemas import SummaryResponse, TransactionItem, TransactionListResponse
+from app.schemas import (
+    SummaryResponse,
+    TransactionCategoryRequest,
+    TransactionCategoryResponse,
+    TransactionItem,
+    TransactionListResponse,
+)
 
 router = APIRouter(tags=["transactions"])
 
@@ -148,3 +154,24 @@ def list_transactions(
     ]
 
     return TransactionListResponse(items=items, total=int(total_row["total"]), limit=limit, offset=offset)
+
+
+@router.post("/transactions/category", response_model=TransactionCategoryResponse)
+def assign_transaction_category(
+    request: TransactionCategoryRequest,
+    connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+) -> TransactionCategoryResponse:
+    try:
+        result = categorize.assign_category(
+            connection, request.connection_id, request.account_id, request.transaction_id, request.category
+        )
+    except categorize.CategoryRulesError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except categorize.UnknownTransactionError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+    return TransactionCategoryResponse(
+        description=result.description,
+        category=result.category,
+        updated=result.updated,
+    )

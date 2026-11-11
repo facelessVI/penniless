@@ -214,3 +214,78 @@ def test_fixture_reset_keeps_learned_rules(tmp_path: Path) -> None:
 
 def test_read_rules_snapshot_tolerates_a_missing_database(tmp_path: Path) -> None:
     assert db.read_rules_snapshot(tmp_path / "absent.sqlite") == []
+
+
+def rule_count(connection: sqlite3.Connection) -> int:
+    return int(connection.execute("SELECT count(*) FROM rules").fetchone()[0])
+
+
+def test_assign_category_writes_one_rule_and_relabels_every_matching_row() -> None:
+    """One merchant, one rule: every stored row with that description moves together."""
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA")
+    seed_transaction(connection, "TX-2", "SPOTIFY USA")
+    seed_transaction(connection, "TX-3", "CORNER STORE")
+
+    result = categorize.assign_category(connection, "CON-1", "ACT-1", "TX-1", "Subscriptions")
+
+    assert result.description == "SPOTIFY USA"
+    assert result.category == "Subscriptions"
+    assert result.updated == 2
+    assert stored_category(connection, "TX-1") == "Subscriptions"
+    assert stored_category(connection, "TX-2") == "Subscriptions"
+    assert stored_category(connection, "TX-3") == categorize.UNCATEGORIZED_CATEGORY
+    assert categorize.load_rules(connection).rules == {"SPOTIFY USA": "Subscriptions"}
+
+
+def test_assigning_a_second_category_moves_the_same_rule() -> None:
+    """Re-picking a merchant corrects the rule instead of stacking a second one."""
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA")
+    seed_transaction(connection, "TX-2", "SPOTIFY USA")
+    categorize.assign_category(connection, "CON-1", "ACT-1", "TX-1", "Subscriptions")
+
+    result = categorize.assign_category(connection, "CON-1", "ACT-1", "TX-2", "Dining")
+
+    assert result.updated == 2
+    assert rule_count(connection) == 1
+    assert categorize.load_rules(connection).rules == {"SPOTIFY USA": "Dining"}
+    assert stored_category(connection, "TX-1") == "Dining"
+
+
+def test_assign_category_can_demote_a_merchant_to_uncategorized() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA")
+    categorize.assign_category(connection, "CON-1", "ACT-1", "TX-1", "Subscriptions")
+
+    categorize.assign_category(connection, "CON-1", "ACT-1", "TX-1", categorize.UNCATEGORIZED_CATEGORY)
+
+    assert stored_category(connection, "TX-1") == categorize.UNCATEGORIZED_CATEGORY
+    assert categorize.load_rules(connection).rules == {"SPOTIFY USA": categorize.UNCATEGORIZED_CATEGORY}
+
+
+def test_assign_category_rejects_an_unknown_category_and_writes_nothing() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA")
+
+    with pytest.raises(categorize.CategoryRulesError, match="not a declared category"):
+        categorize.assign_category(connection, "CON-1", "ACT-1", "TX-1", "Crypto")
+
+    assert rule_count(connection) == 0
+    assert stored_category(connection, "TX-1") == categorize.UNCATEGORIZED_CATEGORY
+
+
+def test_assign_category_rejects_an_unknown_transaction_and_writes_nothing() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    seed_transaction(connection, "TX-1", "SPOTIFY USA")
+
+    with pytest.raises(categorize.UnknownTransactionError, match="Unknown transaction TX-9"):
+        categorize.assign_category(connection, "CON-1", "ACT-1", "TX-9", "Subscriptions")
+
+    assert rule_count(connection) == 0
+    assert stored_category(connection, "TX-1") == categorize.UNCATEGORIZED_CATEGORY

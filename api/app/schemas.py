@@ -167,6 +167,19 @@ class TransactionListResponse(BaseModel):
     offset: int
 
 
+class TransactionCategoryRequest(BaseModel):
+    connection_id: str
+    account_id: str
+    transaction_id: str
+    category: str
+
+
+class TransactionCategoryResponse(BaseModel):
+    description: str
+    category: str
+    updated: int
+
+
 class CategoriesResponse(BaseModel):
     categories: list[str]
     uncategorized: str
