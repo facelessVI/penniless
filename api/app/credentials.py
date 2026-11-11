@@ -1,4 +1,4 @@
-"""The SimpleFIN access URL is a bearer credential. It lives in one 0600 file and never leaves it."""
+"""The SimpleFIN access URL is a bearer credential. It lives in one 0600 file per mode, never leaves it."""
 
 import json
 import os
@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.config import settings
+from app.config import CREDENTIALS_FILENAMES, settings
 
-CREDENTIALS_FILENAME = "credentials.json"
 CREDENTIALS_MODE = 0o600
 
 
@@ -24,7 +23,8 @@ class Credentials:
 
 
 def credentials_path() -> Path:
-    return settings.data_dir / CREDENTIALS_FILENAME
+    """The file for the mode this process runs in, so a fixture claim cannot displace a live one."""
+    return settings.data_dir / CREDENTIALS_FILENAMES[settings.source]
 
 
 def read_credentials() -> Credentials | None:
