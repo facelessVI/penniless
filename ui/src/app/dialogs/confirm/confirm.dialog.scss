@@ -1,0 +1,19 @@
+:host {
+	display: block;
+
+	.confirm-message {
+		margin: 0;
+		color: var(--text);
+	}
+
+	/* Two choices, not one cluster: Cancel sits apart from the action it refuses. Material reads this. */
+	mat-dialog-actions {
+		--mat-dialog-actions-alignment: space-between;
+	}
+
+	/* A delete is the dangerous choice, never the app's primary green action. */
+	.destructive {
+		--mat-button-filled-container-color: var(--mat-sys-error);
+		--mat-button-filled-label-text-color: var(--mat-sys-on-error);
+	}
+}
