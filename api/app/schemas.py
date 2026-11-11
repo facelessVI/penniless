@@ -144,7 +144,7 @@ class SummaryResponse(BaseModel):
     total_out_cents: int
     net_cents: int
     cash_total_cents: int
-    uncategorized_count: int
+    net_worth_cents: int
     transaction_count: int
 
 

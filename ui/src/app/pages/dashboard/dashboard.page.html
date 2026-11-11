@@ -62,11 +62,9 @@
 				<span class="summary-label">Cash</span>
 				<span class="summary-value">{{ strip.cash }}</span>
 			</div>
-			<div class="summary-card summary-card-uncategorized">
-				<span class="summary-label">Uncategorized</span>
-				<a class="summary-value" [routerLink]="['/transactions']" [queryParams]="{ category: 'Uncategorized' }">
-					{{ strip.uncategorizedCount }}
-				</a>
+			<div class="summary-card">
+				<span class="summary-label">Net worth</span>
+				<span class="summary-value" [class.summary-out]="strip.netWorth.startsWith('-')">{{ strip.netWorth }}</span>
 			</div>
 		} @else if (!service.loading()) {
 			<p class="page-hint">No summary for this month yet.</p>

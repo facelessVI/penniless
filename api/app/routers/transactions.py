@@ -7,7 +7,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app import db
-from app.categorize import UNCATEGORIZED_CATEGORY
 from app.schemas import SummaryResponse, TransactionItem, TransactionListResponse
 
 router = APIRouter(tags=["transactions"])
@@ -19,13 +18,14 @@ SUMMARY_SQL = """
 SELECT
     coalesce(sum(CASE WHEN is_transfer = 0 AND amount_cents > 0 THEN amount_cents END), 0) AS total_in_cents,
     coalesce(-sum(CASE WHEN is_transfer = 0 AND amount_cents < 0 THEN amount_cents END), 0) AS total_out_cents,
-    count(*) AS transaction_count,
-    coalesce(sum(CASE WHEN category = ? THEN 1 ELSE 0 END), 0) AS uncategorized_count
+    count(*) AS transaction_count
 FROM transactions
 WHERE posted_date BETWEEN ? AND ?
 """
 
 CASH_TOTAL_SQL = "SELECT coalesce(sum(balance_cents), 0) AS cash_total_cents FROM accounts WHERE include_in_cash = 1"
+
+NET_WORTH_SQL = "SELECT coalesce(sum(balance_cents), 0) AS net_worth_cents FROM accounts"
 
 TRANSACTION_COLUMNS = """
     t.connection_id, t.account_id, a.name AS account_name, t.transaction_id, t.posted_date,
@@ -57,10 +57,9 @@ def get_summary(
     end: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
 ) -> SummaryResponse:
     range_start, range_end = resolve_summary_range(start, end)
-    row = connection.execute(
-        SUMMARY_SQL, (UNCATEGORIZED_CATEGORY, range_start.isoformat(), range_end.isoformat())
-    ).fetchone()
+    row = connection.execute(SUMMARY_SQL, (range_start.isoformat(), range_end.isoformat())).fetchone()
     cash_row = connection.execute(CASH_TOTAL_SQL).fetchone()
+    net_worth_row = connection.execute(NET_WORTH_SQL).fetchone()
     total_in_cents = int(row["total_in_cents"])
     total_out_cents = int(row["total_out_cents"])
 
@@ -71,7 +70,7 @@ def get_summary(
         total_out_cents=total_out_cents,
         net_cents=total_in_cents - total_out_cents,
         cash_total_cents=int(cash_row["cash_total_cents"]),
-        uncategorized_count=int(row["uncategorized_count"]),
+        net_worth_cents=int(net_worth_row["net_worth_cents"]),
         transaction_count=int(row["transaction_count"]),
     )
 
