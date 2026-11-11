@@ -10,8 +10,12 @@ export type DatePreset = "this-month" | "last-month" | "last-3-months" | "year-t
 
 export const PAGE_SIZE_OPTIONS = [50, 100, MAXIMUM_TRANSACTION_PAGE_SIZE];
 
+/** A row is a transfer exactly when its category is this one; there is no separate flag on the wire. */
+const TRANSFERS_CATEGORY = "Transfers";
+
 export interface TransactionRow extends TransactionItem {
 	amountLabel: string;
+	isTransfer: boolean;
 }
 
 @Injectable({ providedIn: "root" })
@@ -33,7 +37,13 @@ export class TransactionsPageService {
 	readonly pageNumber = signal(1);
 	readonly pageSize = signal(DEFAULT_TRANSACTION_PAGE_SIZE);
 
-	readonly rows = computed<TransactionRow[]>(() => this.items().map((item) => ({ ...item, amountLabel: formatSignedCents(item.amount_cents) })));
+	readonly rows = computed<TransactionRow[]>(() =>
+		this.items().map((item) => ({
+			...item,
+			amountLabel: formatSignedCents(item.amount_cents),
+			isTransfer: item.category === TRANSFERS_CATEGORY,
+		})),
+	);
 
 	readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
 

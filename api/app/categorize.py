@@ -1,59 +1,66 @@
-"""The hand-edited category rules: load, validate, classify, and re-apply over stored rows."""
+"""The category list and the learned rules: load, validate, classify, and re-apply over stored rows.
 
-import re
+Both live in SQLite rather than a file. A rule keys on one exact description, so classification is a
+lookup: no ordering, no regex, no first-match-wins. Anything without a rule lands in `Uncategorized`.
+"""
+
 import sqlite3
+from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
-
-import yaml
 
 from app import db
-from app.config import settings
 
 UNCATEGORIZED_CATEGORY = "Uncategorized"
-SUPPORTED_MATCH_FIELDS = ("description",)
-REQUIRED_RULE_KEYS = frozenset({"match", "category"})
-OPTIONAL_RULE_KEYS = frozenset({"transfer"})
-REQUIRED_TOP_LEVEL_KEYS = frozenset({"categories", "rules"})
+TRANSFERS_CATEGORY = "Transfers"
 
-UPDATE_CLASSIFICATION_SQL = """
-UPDATE transactions SET category = ?, is_transfer = ?, updated_at = ?
+LOAD_CATEGORIES_SQL = "SELECT name FROM categories ORDER BY position"
+LOAD_RULES_SQL = "SELECT description, category FROM rules"
+
+SELECT_CLASSIFICATION_SQL = "SELECT connection_id, account_id, transaction_id, description, category FROM transactions"
+
+SELECT_TRANSACTION_DESCRIPTION_SQL = """
+SELECT description FROM transactions
 WHERE connection_id = ? AND account_id = ? AND transaction_id = ?
 """
 
-SELECT_CLASSIFICATION_SQL = """
-SELECT connection_id, account_id, transaction_id, description, category, is_transfer FROM transactions
+UPSERT_RULE_SQL = """
+INSERT INTO rules (description, category, created_at, updated_at) VALUES (?, ?, ?, ?)
+ON CONFLICT (description) DO UPDATE SET
+    category = excluded.category,
+    updated_at = excluded.updated_at
+"""
+
+UPDATE_DESCRIPTION_CATEGORY_SQL = "UPDATE transactions SET category = ?, updated_at = ? WHERE description = ?"
+
+UPDATE_CLASSIFICATION_SQL = """
+UPDATE transactions SET category = ?, updated_at = ?
+WHERE connection_id = ? AND account_id = ? AND transaction_id = ?
 """
 
 
-class CategoryConfigError(ValueError):
-    """The rules file is wrong. Raised at startup too, so a bad file cannot cost a fetch."""
+class CategoryRulesError(ValueError):
+    """The category data is wrong. Raised at startup too, so it cannot cost a fetch."""
 
 
-@dataclass(frozen=True)
-class CategoryRule:
-    position: int
-    patterns: dict[str, re.Pattern[str]]
-    category: str
-    transfer: bool
-
-    def matches(self, description: str) -> bool:
-        return all(pattern.search(description) is not None for pattern in self.patterns.values())
+class UnknownTransactionError(LookupError):
+    """The composite key names no stored transaction."""
 
 
 @dataclass(frozen=True)
 class CategoryRules:
     categories: tuple[str, ...]
-    rules: tuple[CategoryRule, ...]
+    rules: Mapping[str, str]
 
-    def classify(self, description: str) -> tuple[str, bool]:
-        """First match wins; everything else lands in the visible uncategorized bucket."""
-        for rule in self.rules:
-            if rule.matches(description):
-                return rule.category, rule.transfer
+    def classify(self, description: str) -> str:
+        """An exact description match, or the visible bucket unmatched transactions land in."""
+        return self.rules.get(description, UNCATEGORIZED_CATEGORY)
 
-        return UNCATEGORIZED_CATEGORY, False
+
+@dataclass(frozen=True)
+class AssignResult:
+    description: str
+    category: str
+    updated: int
 
 
 @dataclass(frozen=True)
@@ -62,135 +69,71 @@ class ApplyResult:
     uncategorized: int
 
 
-def load_rules(path: Path | None = None) -> CategoryRules:
-    rules_path = path if path is not None else settings.categories_path
+def load_rules(connection: sqlite3.Connection) -> CategoryRules:
+    """Read and validate the category data. A broken row must fail before it can cost a fetch."""
+    categories = tuple(row["name"] for row in connection.execute(LOAD_CATEGORIES_SQL))
 
-    if not rules_path.exists():
-        raise CategoryConfigError(f"{rules_path} does not exist.")
+    if not categories:
+        raise CategoryRulesError("The categories table is empty; the database has lost its category list.")
 
-    try:
-        raw: Any = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as error:
-        raise CategoryConfigError(f"{rules_path.name} is not valid YAML: {error}") from error
+    if UNCATEGORIZED_CATEGORY not in categories:
+        raise CategoryRulesError(
+            f"Categories must include {UNCATEGORIZED_CATEGORY!r}, the bucket unmatched transactions land in."
+        )
 
-    if not isinstance(raw, dict):
-        raise CategoryConfigError(f"{rules_path.name} must be a mapping with `categories` and `rules`.")
+    rules: dict[str, str] = {}
 
-    unknown_keys = set(raw) - REQUIRED_TOP_LEVEL_KEYS
+    for row in connection.execute(LOAD_RULES_SQL):
+        description = row["description"]
+        category = row["category"]
 
-    if unknown_keys:
-        raise CategoryConfigError(f"{rules_path.name} has unknown top-level key(s): {', '.join(sorted(unknown_keys))}.")
+        if not description.strip():
+            raise CategoryRulesError("A rule has an empty description.")
 
-    missing_keys = REQUIRED_TOP_LEVEL_KEYS - set(raw)
+        if category not in categories:
+            raise CategoryRulesError(f"Rule for {description!r} references undeclared category {category!r}.")
 
-    if missing_keys:
-        raise CategoryConfigError(f"{rules_path.name} is missing key(s): {', '.join(sorted(missing_keys))}.")
-
-    categories = parse_categories(raw["categories"], rules_path.name)
-    rules = parse_rules(raw["rules"], categories, rules_path.name)
+        rules[description] = category
 
     return CategoryRules(categories=categories, rules=rules)
 
 
-def parse_categories(raw_categories: Any, filename: str) -> tuple[str, ...]:
-    if not isinstance(raw_categories, list) or not raw_categories:
-        raise CategoryConfigError(f"{filename} `categories` must be a non-empty list of names.")
+def assign_category(
+    connection: sqlite3.Connection,
+    connection_id: str,
+    account_id: str,
+    transaction_id: str,
+    category: str,
+) -> AssignResult:
+    """Teach one description a category: one rule, then every stored row that carries it."""
+    rules = load_rules(connection)
 
-    categories: list[str] = []
-
-    for entry in raw_categories:
-        if not isinstance(entry, str) or not entry.strip():
-            raise CategoryConfigError(f"{filename} `categories` holds an entry that is not a non-empty name.")
-
-        if entry in categories:
-            raise CategoryConfigError(f"{filename} declares category {entry!r} twice.")
-
-        categories.append(entry)
-
-    if UNCATEGORIZED_CATEGORY not in categories:
-        raise CategoryConfigError(
-            f"{filename} must declare {UNCATEGORIZED_CATEGORY!r}, the bucket unmatched transactions land in."
+    if category not in rules.categories:
+        raise CategoryRulesError(
+            f"{category!r} is not a declared category. Declared categories: {', '.join(rules.categories)}."
         )
 
-    return tuple(categories)
+    row = connection.execute(SELECT_TRANSACTION_DESCRIPTION_SQL, (connection_id, account_id, transaction_id)).fetchone()
 
+    if row is None:
+        raise UnknownTransactionError(
+            f"Unknown transaction {transaction_id} on connection {connection_id}, account {account_id}."
+        )
 
-def parse_rules(raw_rules: Any, categories: tuple[str, ...], filename: str) -> tuple[CategoryRule, ...]:
-    if not isinstance(raw_rules, list):
-        raise CategoryConfigError(f"{filename} `rules` must be a list.")
+    # The rule keys on the stored description, not on anything the caller sends, so a client cannot
+    # widen a rule to a description it was never shown.
+    description = str(row["description"])
+    updated_at = db.now_iso()
 
-    rules: list[CategoryRule] = []
+    with connection:
+        connection.execute(UPSERT_RULE_SQL, (description, category, updated_at, updated_at))
+        cursor = connection.execute(UPDATE_DESCRIPTION_CATEGORY_SQL, (category, updated_at, description))
 
-    for offset, entry in enumerate(raw_rules):
-        position = offset + 1
-
-        if not isinstance(entry, dict):
-            raise CategoryConfigError(f"{filename} rule {position} must be a mapping.")
-
-        unknown_keys = set(entry) - (REQUIRED_RULE_KEYS | OPTIONAL_RULE_KEYS)
-
-        if unknown_keys:
-            raise CategoryConfigError(
-                f"{filename} rule {position} has unknown key(s): {', '.join(sorted(unknown_keys))}."
-            )
-
-        missing_keys = REQUIRED_RULE_KEYS - set(entry)
-
-        if missing_keys:
-            raise CategoryConfigError(
-                f"{filename} rule {position} is missing key(s): {', '.join(sorted(missing_keys))}."
-            )
-
-        patterns = parse_match(entry["match"], position, filename)
-        category = entry["category"]
-
-        if not isinstance(category, str):
-            raise CategoryConfigError(f"{filename} rule {position} has a `category` that is not a name.")
-
-        if category not in categories:
-            raise CategoryConfigError(
-                f"{filename} rule {position} references undeclared category {category!r}. "
-                f"Declared categories: {', '.join(categories)}."
-            )
-
-        transfer = entry.get("transfer", False)
-
-        if not isinstance(transfer, bool):
-            raise CategoryConfigError(f"{filename} rule {position} has a `transfer` that is not true or false.")
-
-        rules.append(CategoryRule(position=position, patterns=patterns, category=category, transfer=transfer))
-
-    return tuple(rules)
-
-
-def parse_match(raw_match: Any, position: int, filename: str) -> dict[str, re.Pattern[str]]:
-    if not isinstance(raw_match, dict) or not raw_match:
-        raise CategoryConfigError(f"{filename} rule {position} needs a non-empty `match` mapping.")
-
-    patterns: dict[str, re.Pattern[str]] = {}
-
-    for field, pattern in raw_match.items():
-        if field not in SUPPORTED_MATCH_FIELDS:
-            raise CategoryConfigError(
-                f"{filename} rule {position} matches on unsupported field {field!r}. "
-                f"Supported fields: {', '.join(SUPPORTED_MATCH_FIELDS)}."
-            )
-
-        if not isinstance(pattern, str) or not pattern:
-            raise CategoryConfigError(f"{filename} rule {position} has an empty pattern for {field!r}.")
-
-        try:
-            patterns[field] = re.compile(pattern)
-        except re.error as error:
-            raise CategoryConfigError(
-                f"{filename} rule {position} has an invalid regex for {field!r}: {error}"
-            ) from error
-
-    return patterns
+    return AssignResult(description=description, category=category, updated=cursor.rowcount)
 
 
 def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyResult:
-    """Re-run every rule over every stored row, so categories and transfer flags always match the file."""
+    """Re-run every rule over every stored row, so categories always match the stored rules."""
     updated = 0
     uncategorized = 0
     updated_at = db.now_iso()
@@ -198,17 +141,17 @@ def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyRe
 
     with connection:
         for row in rows:
-            category, transfer = rules.classify(row["description"])
+            category = rules.classify(row["description"])
 
             if category == UNCATEGORIZED_CATEGORY:
                 uncategorized += 1
 
-            if category == row["category"] and int(transfer) == row["is_transfer"]:
+            if category == row["category"]:
                 continue
 
             connection.execute(
                 UPDATE_CLASSIFICATION_SQL,
-                (category, int(transfer), updated_at, row["connection_id"], row["account_id"], row["transaction_id"]),
+                (category, updated_at, row["connection_id"], row["account_id"], row["transaction_id"]),
             )
             updated += 1
 

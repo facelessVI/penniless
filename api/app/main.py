@@ -19,20 +19,29 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
+    # Rules are the only thing a fixture reset keeps, so read them before the file is deleted.
+    preserved_rules = db.read_rules_snapshot(settings.database_path) if settings.source == "fixture" else []
+
     if settings.source == "fixture":
         db.reset_database()
         logger.info("rebuilt fixture database at %s", settings.database_path)
-
-    # A broken rules file fails startup rather than a fetch: SimpleFIN calls cost quota.
-    rules = categorize.load_rules()
-    logger.info("categories ready: %d categories, %d rules", len(rules.categories), len(rules.rules))
 
     connection = db.connect()
 
     try:
         applied_filenames = db.run_migrations(connection)
+        restored_rules = db.restore_rules(connection, preserved_rules)
+
+        # Category data is validated after migrations and before the first fetch: broken rules must
+        # fail startup rather than a fetch, because SimpleFIN calls cost quota.
+        rules = categorize.load_rules(connection)
     finally:
         connection.close()
+
+    logger.info("categories ready: %d categories, %d rules", len(rules.categories), len(rules.rules))
+
+    if restored_rules:
+        logger.info("kept %d learned rule(s) across the fixture reset", restored_rules)
 
     logger.info(
         "database ready at %s, applied migrations: %s",

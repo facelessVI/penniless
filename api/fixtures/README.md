@@ -19,7 +19,7 @@ Three accounts, all on one connection (`CON-FIXTURE-1`, "Fixture Credit Union"):
 - `ACT-CREDIT` "Everyday Rewards Card", `extra.type` `credit card`, so it does not count as cash.
 
 Recurring descriptions (rent, payroll, utilities, groceries, a card payment, transfers between the
-two depository accounts) exist so category rules have something recognizable to match.
+two depository accounts) exist so there is something recognizable to categorize.
 
 ## How the fixture source uses them
 

@@ -4,19 +4,23 @@ import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleChange, MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleChange, MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { ActivatedRoute } from "@angular/router";
+import { TransactionDialog, TransactionDialogData, TransactionDialogResult } from "@app/dialogs/transaction/transaction.dialog";
 import { maskTypedDate } from "@shared/utils/date.util";
-import { DatePreset, PAGE_SIZE_OPTIONS, TransactionsPageService } from "./transactions.service";
+import { DatePreset, PAGE_SIZE_OPTIONS, TransactionRow, TransactionsPageService } from "./transactions.service";
 
 const isSameDay = (first: Date | null, second: Date | null): boolean => first?.getTime() === second?.getTime();
 
 /** A field only counts as entered once its year is whole; a partial year like `202` still parses as a date. */
 const COMPLETE_DATE_PATTERN = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+const SNACKBAR_DURATION_MS = 4_000;
 
 @Component({
 	selector: "penniless-transactions",
@@ -39,6 +43,8 @@ const COMPLETE_DATE_PATTERN = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
 export class TransactionsPage implements OnInit, OnDestroy {
 	private readonly route = inject(ActivatedRoute);
 	private readonly destroyRef = inject(DestroyRef);
+	private readonly dialog = inject(MatDialog);
+	private readonly snackBar = inject(MatSnackBar);
 	private readonly startInput = viewChild<ElementRef<HTMLInputElement>>("startInput");
 	private readonly endInput = viewChild<ElementRef<HTMLInputElement>>("endInput");
 	private appliedRange: { start: Date | null; end: Date | null } = { start: null, end: null };
@@ -114,12 +120,48 @@ export class TransactionsPage implements OnInit, OnDestroy {
 		this.service.setPageSize(Number(event.value));
 	}
 
+	protected onRowClick(row: TransactionRow): void {
+		this.openTransactionDialog(row);
+	}
+
+	/** Rows are focusable, so the keyboard opens them the way a click does. */
+	protected onRowKeydown(event: KeyboardEvent, row: TransactionRow): void {
+		if (event.key !== "Enter" && event.key !== " ") {
+			return;
+		}
+
+		event.preventDefault();
+		this.openTransactionDialog(row);
+	}
+
 	protected previousPage(): void {
 		this.service.setPageNumber(this.service.pageNumber() - 1);
 	}
 
 	protected nextPage(): void {
 		this.service.setPageNumber(this.service.pageNumber() + 1);
+	}
+
+	private openTransactionDialog(row: TransactionRow): void {
+		const dialogWidth = "34rem";
+		const data: TransactionDialogData = { transaction: row, categories: this.service.categories() };
+		const dialogRef = this.dialog.open(TransactionDialog, { width: dialogWidth, data });
+
+		dialogRef.afterClosed().subscribe((result: TransactionDialogResult | undefined) => {
+			if (!result) {
+				return;
+			}
+
+			// Rows outside this page may have moved too, so refetch rather than patch the visible ones.
+			this.snackBar.open(this.buildCategoryMessage(result), undefined, { duration: SNACKBAR_DURATION_MS });
+			this.service.getPage();
+		});
+	}
+
+	private buildCategoryMessage(result: TransactionDialogResult): string {
+		const plural = result.updated === 1 ? "" : "s";
+
+		return `${result.updated} transaction${plural} set to ${result.category}.`;
 	}
 
 	private setupSubscriptions(): void {

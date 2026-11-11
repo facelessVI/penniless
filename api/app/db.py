@@ -1,7 +1,7 @@
 """SQLite access: connections, the migration runner, fixture reset, and SimpleFIN money parsing."""
 
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
@@ -98,6 +98,57 @@ def reset_database(database_path: Path | None = None) -> None:
 
     for suffix in ("", "-wal", "-shm"):
         Path(f"{path}{suffix}").unlink(missing_ok=True)
+
+
+def read_rules_snapshot(database_path: Path) -> list[tuple[str, str]]:
+    """The rules already learned in a fixture database, read before its file is deleted.
+
+    Rules are the one thing a fixture reset keeps: re-teaching every merchant on every restart would
+    make the dev loop useless. A database from before the rules table existed has none.
+    """
+    if not database_path.exists():
+        return []
+
+    connection = sqlite3.connect(database_path)
+
+    try:
+        has_rules_table = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'rules'"
+        ).fetchone()
+
+        if has_rules_table is None:
+            return []
+
+        rows = connection.execute("SELECT description, category FROM rules ORDER BY description").fetchall()
+    finally:
+        connection.close()
+
+    return [(row[0], row[1]) for row in rows]
+
+
+def restore_rules(connection: sqlite3.Connection, rows: Sequence[tuple[str, str]]) -> int:
+    """Re-insert preserved fixture rules after the migrations have rebuilt the tables."""
+    if not rows:
+        return 0
+
+    declared = {row["name"] for row in connection.execute("SELECT name FROM categories")}
+    restored = 0
+    restored_at = now_iso()
+
+    with connection:
+        for description, category in rows:
+            # A category removed by a later migration drops its rules rather than resurrecting them.
+            if category not in declared:
+                continue
+
+            cursor = connection.execute(
+                "INSERT INTO rules (description, category, created_at, updated_at) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT (description) DO NOTHING",
+                (description, category, restored_at, restored_at),
+            )
+            restored += cursor.rowcount
+
+    return restored
 
 
 def parse_cents(value: str | int | float | Decimal | None) -> int | None:

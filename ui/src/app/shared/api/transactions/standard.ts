@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { TransactionListResponse, TransactionQuery } from "./model";
+import { TransactionCategoryContract, TransactionCategoryResponse, TransactionListResponse, TransactionQuery } from "./model";
 
 export const DEFAULT_TRANSACTION_PAGE_SIZE = 50;
 export const MAXIMUM_TRANSACTION_PAGE_SIZE = 200;
@@ -36,5 +36,12 @@ export class TransactionsStandardService {
 		}
 
 		return this.http.get<TransactionListResponse>(url, { params });
+	}
+
+	assignCategory(contract: TransactionCategoryContract) {
+		const url = "/api/transactions/category";
+		const body = contract;
+
+		return this.http.post<TransactionCategoryResponse>(url, body);
 	}
 }

@@ -6,8 +6,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app import db
-from app.schemas import SummaryResponse, TransactionItem, TransactionListResponse
+from app import categorize, db
+from app.schemas import (
+    SummaryResponse,
+    TransactionCategoryRequest,
+    TransactionCategoryResponse,
+    TransactionItem,
+    TransactionListResponse,
+)
 
 router = APIRouter(tags=["transactions"])
 
@@ -16,11 +22,15 @@ MAXIMUM_PAGE_SIZE = 200
 
 SUMMARY_SQL = """
 SELECT
-    coalesce(sum(CASE WHEN is_transfer = 0 AND amount_cents > 0 THEN amount_cents END), 0) AS total_in_cents,
-    coalesce(-sum(CASE WHEN is_transfer = 0 AND amount_cents < 0 THEN amount_cents END), 0) AS total_out_cents,
+    coalesce(
+        sum(CASE WHEN category <> :transfers AND amount_cents > 0 THEN amount_cents END), 0
+    ) AS total_in_cents,
+    coalesce(
+        -sum(CASE WHEN category <> :transfers AND amount_cents < 0 THEN amount_cents END), 0
+    ) AS total_out_cents,
     count(*) AS transaction_count
 FROM transactions
-WHERE posted_date BETWEEN ? AND ?
+WHERE posted_date BETWEEN :start AND :end
 """
 
 CASH_TOTAL_SQL = "SELECT coalesce(sum(balance_cents), 0) AS cash_total_cents FROM accounts WHERE include_in_cash = 1"
@@ -29,7 +39,7 @@ NET_WORTH_SQL = "SELECT coalesce(sum(balance_cents), 0) AS net_worth_cents FROM 
 
 TRANSACTION_COLUMNS = """
     t.connection_id, t.account_id, a.name AS account_name, t.transaction_id, t.posted_date,
-    t.description, t.category, t.amount_cents, t.is_transfer
+    t.description, t.category, t.amount_cents
 """
 
 TRANSACTION_FROM_SQL = """
@@ -57,7 +67,12 @@ def get_summary(
     end: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
 ) -> SummaryResponse:
     range_start, range_end = resolve_summary_range(start, end)
-    row = connection.execute(SUMMARY_SQL, (range_start.isoformat(), range_end.isoformat())).fetchone()
+    parameters = {
+        "transfers": categorize.TRANSFERS_CATEGORY,
+        "start": range_start.isoformat(),
+        "end": range_end.isoformat(),
+    }
+    row = connection.execute(SUMMARY_SQL, parameters).fetchone()
     cash_row = connection.execute(CASH_TOTAL_SQL).fetchone()
     net_worth_row = connection.execute(NET_WORTH_SQL).fetchone()
     total_in_cents = int(row["total_in_cents"])
@@ -109,7 +124,8 @@ def list_transactions(
         parameters.append(end.isoformat())
 
     if not include_transfers:
-        clauses.append("t.is_transfer = 0")
+        clauses.append("t.category <> ?")
+        parameters.append(categorize.TRANSFERS_CATEGORY)
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
@@ -132,9 +148,29 @@ def list_transactions(
             description=row["description"],
             category=row["category"],
             amount_cents=row["amount_cents"],
-            is_transfer=bool(row["is_transfer"]),
         )
         for row in rows
     ]
 
     return TransactionListResponse(items=items, total=int(total_row["total"]), limit=limit, offset=offset)
+
+
+@router.post("/transactions/category", response_model=TransactionCategoryResponse)
+def assign_transaction_category(
+    request: TransactionCategoryRequest,
+    connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+) -> TransactionCategoryResponse:
+    try:
+        result = categorize.assign_category(
+            connection, request.connection_id, request.account_id, request.transaction_id, request.category
+        )
+    except categorize.CategoryRulesError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except categorize.UnknownTransactionError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+    return TransactionCategoryResponse(
+        description=result.description,
+        category=result.category,
+        updated=result.updated,
+    )

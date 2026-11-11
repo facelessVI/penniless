@@ -400,7 +400,6 @@ dependencies = [
     { name = "httpx" },
     { name = "pandas" },
     { name = "pydantic" },
-    { name = "pyyaml" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -417,7 +416,6 @@ requires-dist = [
     { name = "httpx" },
     { name = "pandas" },
     { name = "pydantic" },
-    { name = "pyyaml" },
     { name = "uvicorn", extras = ["standard"] },
 ]
 

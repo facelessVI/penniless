@@ -71,8 +71,8 @@ ON CONFLICT (connection_id, account_id, balance_date) DO UPDATE SET
 UPSERT_TRANSACTION_SQL = """
 INSERT INTO transactions (
     connection_id, account_id, transaction_id, posted_at, posted_date, transacted_at,
-    description, amount_cents, category, is_transfer, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    description, amount_cents, category, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (connection_id, account_id, transaction_id) DO UPDATE SET
     posted_at = excluded.posted_at,
     posted_date = excluded.posted_date,
@@ -80,7 +80,6 @@ ON CONFLICT (connection_id, account_id, transaction_id) DO UPDATE SET
     description = excluded.description,
     amount_cents = excluded.amount_cents,
     category = excluded.category,
-    is_transfer = excluded.is_transfer,
     updated_at = excluded.updated_at
 """
 
@@ -253,8 +252,8 @@ def refresh_guard(connection: sqlite3.Connection, now: datetime | None = None) -
 def ingest_window(
     connection: sqlite3.Connection, source: AccountSource, access_url: str, window: FetchWindow
 ) -> IngestResult:
-    # Validate the rules first: a broken categories file must not cost a fetch.
-    rules = load_rules()
+    # Validate the categories first: broken category data must not cost a fetch.
+    rules = load_rules(connection)
     fetched_at = now_iso()
 
     try:
@@ -357,7 +356,7 @@ def upsert_account(
         if amount_cents is None:
             raise SimpleFinError(f"SimpleFIN transaction {transaction.id} reported no amount.")
 
-        category, is_transfer = rules.classify(transaction.description)
+        category = rules.classify(transaction.description)
 
         posted_date = local_date(posted_epoch).isoformat()
         transacted_at = local_date(transaction.transacted_at).isoformat() if transaction.transacted_at else None
@@ -374,7 +373,6 @@ def upsert_account(
                 transaction.description,
                 amount_cents,
                 category,
-                int(is_transfer),
                 fetched_at,
                 fetched_at,
             ),
