@@ -1,7 +1,11 @@
-"""The category list and the learned rules: load, validate, classify, and re-apply over stored rows.
+"""The category list and the learned rules: load, validate, classify, re-apply, and manage.
 
 Both live in SQLite rather than a file. A rule keys on one exact description, so classification is a
 lookup: no ordering, no regex, no first-match-wins. Anything without a rule lands in `Uncategorized`.
+
+Two names are load-bearing in code rather than data, so they are protected here as well as in the UI:
+`Transfers` is how a row is recognized as a transfer, and `Uncategorized` is the fallback bucket that
+startup validation requires.
 """
 
 import sqlite3
@@ -12,6 +16,12 @@ from app import db
 
 UNCATEGORIZED_CATEGORY = "Uncategorized"
 TRANSFERS_CATEGORY = "Transfers"
+PROTECTED_CATEGORIES = (TRANSFERS_CATEGORY, UNCATEGORIZED_CATEGORY)
+PROTECTED_CATEGORY_REASONS = {
+    TRANSFERS_CATEGORY: f"{TRANSFERS_CATEGORY!r} decides which rows are transfers",
+    UNCATEGORIZED_CATEGORY: f"{UNCATEGORIZED_CATEGORY!r} is where unmatched transactions land",
+}
+MAXIMUM_CATEGORY_NAME_LENGTH = 40
 
 LOAD_CATEGORIES_SQL = "SELECT name FROM categories ORDER BY position"
 LOAD_RULES_SQL = "SELECT description, category FROM rules"
@@ -37,6 +47,32 @@ UPDATE transactions SET category = ?, updated_at = ?
 WHERE connection_id = ? AND account_id = ? AND transaction_id = ?
 """
 
+SELECT_CATEGORIES_WITH_COUNTS_SQL = """
+SELECT
+    categories.name,
+    categories.position,
+    (SELECT count(*) FROM transactions WHERE transactions.category = categories.name) AS transaction_count,
+    (SELECT count(*) FROM rules WHERE rules.category = categories.name) AS rule_count
+FROM categories
+ORDER BY categories.position
+"""
+
+SELECT_CATEGORY_SQL = "SELECT name FROM categories WHERE name = ?"
+
+SELECT_CATEGORY_CASE_INSENSITIVE_SQL = "SELECT name FROM categories WHERE name = ? COLLATE NOCASE"
+
+INSERT_CATEGORY_SQL = """
+INSERT INTO categories (name, position) VALUES (?, (SELECT coalesce(max(position), 0) + 1 FROM categories))
+"""
+
+RENAME_CATEGORY_SQL = "UPDATE categories SET name = ? WHERE name = ?"
+
+REASSIGN_CATEGORY_TRANSACTIONS_SQL = "UPDATE transactions SET category = ?, updated_at = ? WHERE category = ?"
+
+DELETE_CATEGORY_RULES_SQL = "DELETE FROM rules WHERE category = ?"
+
+DELETE_CATEGORY_SQL = "DELETE FROM categories WHERE name = ?"
+
 
 class CategoryRulesError(ValueError):
     """The category data is wrong. Raised at startup too, so it cannot cost a fetch."""
@@ -44,6 +80,18 @@ class CategoryRulesError(ValueError):
 
 class UnknownTransactionError(LookupError):
     """The composite key names no stored transaction."""
+
+
+class CategoryNameError(ValueError):
+    """A category name is empty, too long, carries a slash, or is already taken."""
+
+
+class ProtectedCategoryError(ValueError):
+    """The category is named in code, so renaming or deleting it would change behavior."""
+
+
+class UnknownCategoryError(LookupError):
+    """No category has that name."""
 
 
 @dataclass(frozen=True)
@@ -67,6 +115,24 @@ class AssignResult:
 class ApplyResult:
     updated: int
     uncategorized: int
+
+
+@dataclass(frozen=True)
+class CategorySummary:
+    name: str
+    position: int
+    transaction_count: int
+    rule_count: int
+
+    @property
+    def is_protected(self) -> bool:
+        return self.name in PROTECTED_CATEGORIES
+
+
+@dataclass(frozen=True)
+class CategoryDeleteResult:
+    moved_transactions: int
+    deleted_rules: int
 
 
 def load_rules(connection: sqlite3.Connection) -> CategoryRules:
@@ -156,3 +222,101 @@ def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyRe
             updated += 1
 
     return ApplyResult(updated=updated, uncategorized=uncategorized)
+
+
+def normalize_category_name(name: str) -> str:
+    """Trim the ends only: the spacing inside a name is what the user typed."""
+    normalized = name.strip()
+
+    if not normalized:
+        raise CategoryNameError("A category needs a name.")
+
+    if len(normalized) > MAXIMUM_CATEGORY_NAME_LENGTH:
+        raise CategoryNameError(f"A category name can be at most {MAXIMUM_CATEGORY_NAME_LENGTH} characters.")
+
+    # The management endpoints name a category in the path, where a slash would split the segment and
+    # turn a valid rename into a 404. Refusing it at the door is clearer than a route that cannot match.
+    if "/" in normalized:
+        raise CategoryNameError("A category name cannot contain a slash.")
+
+    return normalized
+
+
+def list_categories(connection: sqlite3.Connection) -> list[CategorySummary]:
+    """Every category in display order, with how many transactions and rules currently carry it."""
+    return [
+        CategorySummary(
+            name=row["name"],
+            position=row["position"],
+            transaction_count=row["transaction_count"],
+            rule_count=row["rule_count"],
+        )
+        for row in connection.execute(SELECT_CATEGORIES_WITH_COUNTS_SQL)
+    ]
+
+
+def create_category(connection: sqlite3.Connection, name: str) -> None:
+    """Append a category to the end of the order; positions are never reused."""
+    normalized = normalize_category_name(name)
+    ensure_category_name_is_free(connection, normalized)
+
+    with connection:
+        connection.execute(INSERT_CATEGORY_SQL, (normalized,))
+
+
+def rename_category(connection: sqlite3.Connection, name: str, new_name: str) -> None:
+    """Rename in place. Both foreign keys carry `ON UPDATE CASCADE`, so rules and rows follow."""
+    ensure_category_exists(connection, name)
+    ensure_category_is_editable(name)
+
+    normalized = normalize_category_name(new_name)
+    ensure_category_name_is_free(connection, normalized, current_name=name)
+
+    with connection:
+        connection.execute(RENAME_CATEGORY_SQL, (normalized, name))
+
+
+def delete_category(connection: sqlite3.Connection, name: str) -> CategoryDeleteResult:
+    """Move the category's transactions to `Uncategorized`, drop its rules, then drop the category.
+
+    `ON DELETE RESTRICT` would refuse the delete while either table still names the category, and
+    moving the rows keeps every transaction rather than losing the ones it held.
+    """
+    ensure_category_exists(connection, name)
+    ensure_category_is_editable(name)
+
+    updated_at = db.now_iso()
+
+    with connection:
+        transactions_cursor = connection.execute(
+            REASSIGN_CATEGORY_TRANSACTIONS_SQL, (UNCATEGORIZED_CATEGORY, updated_at, name)
+        )
+        rules_cursor = connection.execute(DELETE_CATEGORY_RULES_SQL, (name,))
+        connection.execute(DELETE_CATEGORY_SQL, (name,))
+
+    return CategoryDeleteResult(moved_transactions=transactions_cursor.rowcount, deleted_rules=rules_cursor.rowcount)
+
+
+def ensure_category_exists(connection: sqlite3.Connection, name: str) -> None:
+    """Exact match: category names are identifiers and compare case-sensitively."""
+    if connection.execute(SELECT_CATEGORY_SQL, (name,)).fetchone() is not None:
+        return
+
+    raise UnknownCategoryError(f"Unknown category {name!r}.")
+
+
+def ensure_category_name_is_free(connection: sqlite3.Connection, name: str, current_name: str | None = None) -> None:
+    """Case-insensitive, matching the unique index on the table."""
+    row = connection.execute(SELECT_CATEGORY_CASE_INSENSITIVE_SQL, (name,)).fetchone()
+
+    if row is None or row["name"] == current_name:
+        return
+
+    raise CategoryNameError(f"{name!r} is already a category.")
+
+
+def ensure_category_is_editable(name: str) -> None:
+    if name not in PROTECTED_CATEGORY_REASONS:
+        return
+
+    raise ProtectedCategoryError(f"{PROTECTED_CATEGORY_REASONS[name]}, so it cannot be renamed or deleted.")

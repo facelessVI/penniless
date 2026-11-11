@@ -179,9 +179,26 @@ class TransactionCategoryResponse(BaseModel):
     updated: int
 
 
+class CategoryItem(BaseModel):
+    name: str
+    position: int
+    transaction_count: int
+    rule_count: int
+    protected: bool
+
+
 class CategoriesResponse(BaseModel):
-    categories: list[str]
+    categories: list[CategoryItem]
     uncategorized: str
+
+
+class CategoryNameRequest(BaseModel):
+    name: str
+
+
+class CategoryDeleteResponse(CategoriesResponse):
+    moved_transactions: int
+    deleted_rules: int
 
 
 class ApplyCategoriesResponse(BaseModel):
