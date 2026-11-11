@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ViewEncapsulation, inject } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatMenuModule } from "@angular/material/menu";
 import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { ErrorService } from "@shared/services/error.service";
 import { LoadingService } from "@shared/services/loading.service";
@@ -10,7 +12,7 @@ export interface NavLink {
 
 @Component({
 	selector: "app-main-layout",
-	imports: [RouterOutlet, RouterLink, RouterLinkActive],
+	imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatMenuModule],
 	templateUrl: "./main-layout.component.html",
 	styleUrl: "./main-layout.component.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,

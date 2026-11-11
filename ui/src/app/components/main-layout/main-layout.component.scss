@@ -24,13 +24,21 @@ app-main-layout {
 	}
 
 	.top-nav {
-		display: flex;
-		align-items: center;
-		gap: 2rem;
 		height: 3.5rem;
-		padding: 0 1.5rem;
 		border-bottom: 1px solid var(--border);
 		background: var(--surface);
+
+		/* Same 1200px centred box as .content, so the nav and the page body share both edges. */
+		.top-nav-inner {
+			display: flex;
+			align-items: center;
+			gap: 2rem;
+			width: 100%;
+			max-width: 1200px;
+			height: 100%;
+			margin: 0 auto;
+			padding: 0 1.5rem;
+		}
 
 		.top-nav-brand {
 			font: var(--mat-sys-title-medium);
@@ -59,6 +67,12 @@ app-main-layout {
 					color: var(--mat-sys-on-secondary-container);
 				}
 			}
+		}
+
+		/* The gear is not a nav link: it navigates nowhere itself, so it carries no active state. */
+		.top-nav-settings {
+			margin-left: auto;
+			color: var(--text-muted);
 		}
 	}
 
