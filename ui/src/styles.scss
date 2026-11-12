@@ -37,7 +37,7 @@ html {
 		)
 	);
 
-	/* Selection stays in the slate family rather than turning into an earth-colored state fill. */
+	/* Selection stays in the primary navy family rather than using a secondary-colored state fill. */
 	@include mat.button-toggle-overrides(
 		(
 			selected-state-background-color: var(--mat-sys-primary-container),
