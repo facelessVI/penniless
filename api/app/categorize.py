@@ -1,7 +1,10 @@
 """The category list and the learned rules: load, validate, classify, re-apply, and manage.
 
-Both live in SQLite rather than a file. A rule keys on one exact description, so classification is a
-lookup: no ordering, no regex, no first-match-wins. Anything without a rule lands in `Uncategorized`.
+Both live in SQLite rather than a file. A rule is a pattern with a `match_type`: `exact` for the
+whole description or `contains` for a case-insensitive literal substring. Every rule that matches a
+description is a candidate and the most specific one wins (`exact` first, then the longer pattern,
+then the newest rule, then alphabetical), so classification is a small ordered scan rather than a
+lookup. Anything no rule matches lands in `Uncategorized`. There is no user-facing regex.
 
 Two names are load-bearing in code rather than data, so they are protected here as well as in the UI:
 `Transfers` is how a row is recognized as a transfer, and `Uncategorized` is the fallback bucket that
@@ -9,7 +12,6 @@ startup validation requires.
 """
 
 import sqlite3
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from app import db
@@ -23,8 +25,12 @@ PROTECTED_CATEGORY_REASONS = {
 }
 MAXIMUM_CATEGORY_NAME_LENGTH = 40
 
+MATCH_TYPE_EXACT = "exact"
+MATCH_TYPE_CONTAINS = "contains"
+MATCH_TYPES = (MATCH_TYPE_EXACT, MATCH_TYPE_CONTAINS)
+
 LOAD_CATEGORIES_SQL = "SELECT name FROM categories ORDER BY position"
-LOAD_RULES_SQL = "SELECT description, category FROM rules"
+LOAD_RULES_SQL = "SELECT match_type, pattern, category, updated_at FROM rules"
 
 SELECT_CLASSIFICATION_SQL = "SELECT connection_id, account_id, transaction_id, description, category FROM transactions"
 
@@ -34,8 +40,8 @@ WHERE connection_id = ? AND account_id = ? AND transaction_id = ?
 """
 
 UPSERT_RULE_SQL = """
-INSERT INTO rules (description, category, created_at, updated_at) VALUES (?, ?, ?, ?)
-ON CONFLICT (description) DO UPDATE SET
+INSERT INTO rules (match_type, pattern, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+ON CONFLICT DO UPDATE SET
     category = excluded.category,
     updated_at = excluded.updated_at
 """
@@ -95,13 +101,32 @@ class UnknownCategoryError(LookupError):
 
 
 @dataclass(frozen=True)
+class Rule:
+    match_type: str
+    pattern: str
+    category: str
+    updated_at: str
+
+    def matches(self, description: str) -> bool:
+        """`exact` is the whole description and stays case-sensitive; `contains` is a substring."""
+        if self.match_type == MATCH_TYPE_EXACT:
+            return self.pattern == description
+
+        return self.pattern.casefold() in description.casefold()
+
+
+@dataclass(frozen=True)
 class CategoryRules:
     categories: tuple[str, ...]
-    rules: Mapping[str, str]
+    rules: tuple[Rule, ...]
 
     def classify(self, description: str) -> str:
-        """An exact description match, or the visible bucket unmatched transactions land in."""
-        return self.rules.get(description, UNCATEGORIZED_CATEGORY)
+        """The category of the first (most specific) matching rule, or the unmatched bucket."""
+        for rule in self.rules:
+            if rule.matches(description):
+                return rule.category
+
+        return UNCATEGORIZED_CATEGORY
 
 
 @dataclass(frozen=True)
@@ -135,6 +160,19 @@ class CategoryDeleteResult:
     deleted_rules: int
 
 
+def order_rules(rules: list[Rule]) -> tuple[Rule, ...]:
+    """Most specific first: exact before contains, longer patterns, newest, then alphabetical.
+
+    Python's sort is stable, so each pass refines the one before it: the last sort is the primary key.
+    """
+    ordered = sorted(rules, key=lambda rule: rule.pattern)
+    ordered.sort(key=lambda rule: rule.updated_at, reverse=True)
+    ordered.sort(key=lambda rule: len(rule.pattern), reverse=True)
+    ordered.sort(key=lambda rule: 0 if rule.match_type == MATCH_TYPE_EXACT else 1)
+
+    return tuple(ordered)
+
+
 def load_rules(connection: sqlite3.Connection) -> CategoryRules:
     """Read and validate the category data. A broken row must fail before it can cost a fetch."""
     categories = tuple(row["name"] for row in connection.execute(LOAD_CATEGORIES_SQL))
@@ -147,21 +185,27 @@ def load_rules(connection: sqlite3.Connection) -> CategoryRules:
             f"Categories must include {UNCATEGORIZED_CATEGORY!r}, the bucket unmatched transactions land in."
         )
 
-    rules: dict[str, str] = {}
+    rules: list[Rule] = []
 
     for row in connection.execute(LOAD_RULES_SQL):
-        description = row["description"]
-        category = row["category"]
+        match_type = str(row["match_type"])
+        pattern = str(row["pattern"])
+        category = str(row["category"])
 
-        if not description.strip():
-            raise CategoryRulesError("A rule has an empty description.")
+        if match_type not in MATCH_TYPES:
+            raise CategoryRulesError(
+                f"A rule has match type {match_type!r}; the known ones are {', '.join(MATCH_TYPES)}."
+            )
+
+        if not pattern.strip():
+            raise CategoryRulesError("A rule has an empty pattern.")
 
         if category not in categories:
-            raise CategoryRulesError(f"Rule for {description!r} references undeclared category {category!r}.")
+            raise CategoryRulesError(f"Rule for {pattern!r} references undeclared category {category!r}.")
 
-        rules[description] = category
+        rules.append(Rule(match_type=match_type, pattern=pattern, category=category, updated_at=str(row["updated_at"])))
 
-    return CategoryRules(categories=categories, rules=rules)
+    return CategoryRules(categories=categories, rules=order_rules(rules))
 
 
 def assign_category(
@@ -192,7 +236,7 @@ def assign_category(
     updated_at = db.now_iso()
 
     with connection:
-        connection.execute(UPSERT_RULE_SQL, (description, category, updated_at, updated_at))
+        connection.execute(UPSERT_RULE_SQL, (MATCH_TYPE_EXACT, description, category, updated_at, updated_at))
         cursor = connection.execute(UPDATE_DESCRIPTION_CATEGORY_SQL, (category, updated_at, description))
 
     return AssignResult(description=description, category=category, updated=cursor.rowcount)

@@ -100,11 +100,13 @@ def reset_database(database_path: Path | None = None) -> None:
         Path(f"{path}{suffix}").unlink(missing_ok=True)
 
 
-def read_rules_snapshot(database_path: Path) -> list[tuple[str, str]]:
+def read_rules_snapshot(database_path: Path) -> list[tuple[str, str, str]]:
     """The rules already learned in a fixture database, read before its file is deleted.
 
     Rules are the one thing a fixture reset keeps: re-teaching every merchant on every restart would
-    make the dev loop useless. A database from before the rules table existed has none.
+    make the dev loop useless. A database from before the rules table existed has none, and one from
+    before migration 004 has no `match_type` column: its rules were all exact, so they restore as
+    exact rather than being dropped.
     """
     if not database_path.exists():
         return []
@@ -119,14 +121,21 @@ def read_rules_snapshot(database_path: Path) -> list[tuple[str, str]]:
         if has_rules_table is None:
             return []
 
+        columns = {str(row[1]) for row in connection.execute("PRAGMA table_info('rules')")}
+
+        if "match_type" in columns:
+            rows = connection.execute("SELECT match_type, pattern, category FROM rules ORDER BY pattern").fetchall()
+
+            return [(str(row[0]), str(row[1]), str(row[2])) for row in rows]
+
         rows = connection.execute("SELECT description, category FROM rules ORDER BY description").fetchall()
+
+        return [("exact", str(row[0]), str(row[1])) for row in rows]
     finally:
         connection.close()
 
-    return [(row[0], row[1]) for row in rows]
 
-
-def restore_rules(connection: sqlite3.Connection, rows: Sequence[tuple[str, str]]) -> int:
+def restore_rules(connection: sqlite3.Connection, rows: Sequence[tuple[str, str, str]]) -> int:
     """Re-insert preserved fixture rules after the migrations have rebuilt the tables."""
     if not rows:
         return 0
@@ -136,15 +145,15 @@ def restore_rules(connection: sqlite3.Connection, rows: Sequence[tuple[str, str]
     restored_at = now_iso()
 
     with connection:
-        for description, category in rows:
+        for match_type, pattern, category in rows:
             # A category removed by a later migration drops its rules rather than resurrecting them.
             if category not in declared:
                 continue
 
             cursor = connection.execute(
-                "INSERT INTO rules (description, category, created_at, updated_at) VALUES (?, ?, ?, ?) "
-                "ON CONFLICT (description) DO NOTHING",
-                (description, category, restored_at, restored_at),
+                "INSERT INTO rules (match_type, pattern, category, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+                (match_type, pattern, category, restored_at, restored_at),
             )
             restored += cursor.rowcount
 
