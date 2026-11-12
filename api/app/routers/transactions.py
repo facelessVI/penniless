@@ -12,6 +12,9 @@ from app.schemas import (
     TransactionCategoryRequest,
     TransactionCategoryResponse,
     TransactionItem,
+    TransactionKeywordOption,
+    TransactionKeywordResponse,
+    TransactionKeywordRule,
     TransactionListResponse,
 )
 
@@ -155,6 +158,21 @@ def list_transactions(
     return TransactionListResponse(items=items, total=int(total_row["total"]), limit=limit, offset=offset)
 
 
+@router.get("/transactions/keywords", response_model=TransactionKeywordResponse)
+def list_transaction_keywords(
+    connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+    connection_id: Annotated[str, Query(description="The transaction's connection")],
+    account_id: Annotated[str, Query(description="The transaction's account")],
+    transaction_id: Annotated[str, Query(description="The transaction's id")],
+) -> TransactionKeywordResponse:
+    try:
+        options = categorize.list_keyword_options(connection, connection_id, account_id, transaction_id)
+    except categorize.UnknownTransactionError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+    return to_keyword_response(options)
+
+
 @router.post("/transactions/category", response_model=TransactionCategoryResponse)
 def assign_transaction_category(
     request: TransactionCategoryRequest,
@@ -162,15 +180,56 @@ def assign_transaction_category(
 ) -> TransactionCategoryResponse:
     try:
         result = categorize.assign_category(
-            connection, request.connection_id, request.account_id, request.transaction_id, request.category
+            connection,
+            request.connection_id,
+            request.account_id,
+            request.transaction_id,
+            request.category,
+            request.match_type,
+            request.pattern,
         )
     except categorize.CategoryRulesError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except categorize.RulePatternError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except categorize.UnknownRuleError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except categorize.UnknownTransactionError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
     return TransactionCategoryResponse(
         description=result.description,
+        match_type=result.match_type,
+        pattern=result.pattern,
         category=result.category,
+        matched=result.matched,
         updated=result.updated,
+        rule_deleted=result.rule_deleted,
+    )
+
+
+def to_keyword_response(options: categorize.KeywordOptions) -> TransactionKeywordResponse:
+    effective_rule = options.effective_rule
+
+    return TransactionKeywordResponse(
+        description=options.description,
+        effective_rule=(
+            TransactionKeywordRule(
+                match_type=effective_rule.match_type,
+                pattern=effective_rule.pattern,
+                category=effective_rule.category,
+            )
+            if effective_rule is not None
+            else None
+        ),
+        options=[
+            TransactionKeywordOption(
+                match_type=option.match_type,
+                pattern=option.pattern,
+                category=option.category,
+                source=option.source,
+                matched=option.matched,
+            )
+            for option in options.options
+        ],
     )
