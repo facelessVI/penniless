@@ -24,7 +24,7 @@ app-main-layout {
 	}
 
 	.top-nav {
-		height: 3.5rem;
+		height: 4.5rem;
 		border-bottom: 1px solid var(--border);
 		background: var(--surface);
 
@@ -41,10 +41,14 @@ app-main-layout {
 		}
 
 		.top-nav-brand {
-			font: var(--mat-sys-title-medium);
-			font-weight: 600;
-			color: var(--text);
-			text-decoration: none;
+			display: inline-flex;
+			align-items: center;
+		}
+
+		.top-nav-logo {
+			display: block;
+			height: 3.5rem;
+			width: auto;
 		}
 
 		.top-nav-links {

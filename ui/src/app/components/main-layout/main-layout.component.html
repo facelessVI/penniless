@@ -6,7 +6,12 @@
 
 <header class="top-nav">
 	<div class="top-nav-inner">
-		<a class="top-nav-brand" routerLink="/dashboard">Penniless</a>
+		<a class="top-nav-brand" routerLink="/dashboard">
+			<picture>
+				<source srcset="/brand/penniless-horizontal-dark.svg" media="(prefers-color-scheme: dark)" />
+				<img class="top-nav-logo" src="/brand/penniless-horizontal.svg" alt="Penniless" />
+			</picture>
+		</a>
 
 		<nav class="top-nav-links">
 			@for (link of links; track link.route) {
