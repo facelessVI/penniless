@@ -1,18 +1,33 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { ApiClientService } from "@shared/api/api-client.service";
-import { TransactionCategoryContract, TransactionCategoryResponse, TransactionItem } from "@shared/api/transactions/model";
+import {
+	TransactionCategoryContract,
+	TransactionCategoryResponse,
+	TransactionItem,
+	TransactionKeywordOption,
+	TransactionKeywordResponse,
+} from "@shared/api/transactions/model";
 import { formatSignedCents } from "@shared/utils/money.util";
+
+/** The bucket a rule removal is expressed through: there is no separate delete action. */
+const UNCATEGORIZED_CATEGORY = "Uncategorized";
 
 export interface TransactionDialogData {
 	transaction: TransactionItem;
 	categories: string[];
 }
 
-/** One transaction's details plus the category select that teaches its description a category. */
+/**
+ * One transaction's details plus the keyword and category selects that teach a rule.
+ *
+ * The keyword select offers what the description is made of and any rule that already matches it, and
+ * opens on the rule that actually decides the row. Picking `Uncategorized` removes the selected
+ * keyword's rule instead of writing one.
+ */
 @Component({
 	selector: "penniless-transaction-dialog",
 	imports: [MatButtonModule, MatDialogModule, MatFormFieldModule, MatSelectModule],
@@ -20,22 +35,103 @@ export interface TransactionDialogData {
 	styleUrl: "./transaction.dialog.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TransactionDialog {
+export class TransactionDialog implements OnInit {
 	private readonly apiClient = inject(ApiClientService);
 	private readonly dialogRef = inject(MatDialogRef<TransactionDialog>);
 	protected readonly data: TransactionDialogData = inject(MAT_DIALOG_DATA);
 
-	protected readonly loading = signal(false);
+	protected readonly options = signal<TransactionKeywordOption[]>([]);
+	protected readonly optionsLoading = signal(true);
+	protected readonly optionsFailed = signal(false);
+	protected readonly selected = signal<TransactionKeywordOption | null>(null);
 	protected readonly selectedCategory = signal(this.data.transaction.category);
+	protected readonly loading = signal(false);
 	protected readonly amountLabel = formatSignedCents(this.data.transaction.amount_cents);
-	protected readonly isUnchanged = computed(() => this.selectedCategory() === this.data.transaction.category);
+
+	/** The rule for this description as written, which outranks every keyword it also matches. */
+	private readonly exactRule = computed(() => this.options().find((option) => option.match_type === "exact" && option.category !== null) ?? null);
+
+	private readonly isDelete = computed(() => this.selectedCategory() === UNCATEGORIZED_CATEGORY);
+
+	/** The selected keyword cannot take effect, so the note has to name the rule that outranks it. */
+	private readonly isShadowed = computed(() => {
+		const selected = this.selected();
+		const exactRule = this.exactRule();
+
+		return (
+			!this.isDelete() &&
+			selected !== null &&
+			selected.match_type === "contains" &&
+			exactRule !== null &&
+			exactRule.category !== this.selectedCategory()
+		);
+	});
+
+	/**
+	 * Why Save is unavailable, or `null` when nothing needs explaining. A disabled Save with no note is
+	 * the default when the selection has nothing to do; only a keyword shadowed by an exact rule
+	 * looks like it should have worked, so only that one - and a failed load - gets a line.
+	 */
+	protected readonly saveReason = computed<string | null>(() => {
+		if (this.optionsFailed()) {
+			return "Keywords could not be loaded, so nothing can be saved here.";
+		}
+
+		const exactRule = this.exactRule();
+
+		if (this.isShadowed() && exactRule !== null) {
+			return `${exactRule.pattern} has its own description rule at ${exactRule.category}; change that one instead.`;
+		}
+
+		return null;
+	});
+
+	protected readonly canSave = computed(() => {
+		if (this.optionsLoading() || this.optionsFailed() || this.loading()) {
+			return false;
+		}
+
+		const selected = this.selected();
+
+		if (selected === null) {
+			return false;
+		}
+
+		if (this.isDelete()) {
+			// `Uncategorized` means "delete this keyword's rule", so there has to be a rule.
+			return selected.category !== null;
+		}
+
+		return selected.category !== this.selectedCategory() && !this.isShadowed();
+	});
+
+	ngOnInit(): void {
+		this.loadKeywordOptions();
+	}
+
+	protected onKeywordChange(event: MatSelectChange): void {
+		this.selected.set(event.value as TransactionKeywordOption);
+	}
 
 	protected onCategoryChange(event: MatSelectChange): void {
 		this.selectedCategory.set(event.value as string);
 	}
 
+	/** Material compares select values by identity; options are rebuilt on every open. */
+	protected compareOptions(first: TransactionKeywordOption | null, second: TransactionKeywordOption | null): boolean {
+		return first?.match_type === second?.match_type && first?.pattern === second?.pattern;
+	}
+
+	protected optionLabel(option: TransactionKeywordOption): string {
+		const transactions = `${option.matched} transaction${option.matched === 1 ? "" : "s"}`;
+
+		return option.category === null ? `${option.pattern} · ${transactions}` : `${option.pattern} · ${transactions} · ${option.category}`;
+	}
+
 	protected save(): void {
-		if (this.loading() || this.isUnchanged()) {
+		const selected = this.selected();
+
+		if (!this.canSave() || selected === null) {
 			return;
 		}
 
@@ -44,6 +140,8 @@ export class TransactionDialog {
 			connection_id: transaction.connection_id,
 			account_id: transaction.account_id,
 			transaction_id: transaction.transaction_id,
+			match_type: selected.match_type,
+			pattern: selected.pattern,
 			category: this.selectedCategory(),
 		};
 
@@ -58,6 +156,39 @@ export class TransactionDialog {
 			// intact so the save can be retried.
 			error: () => this.loading.set(false),
 		});
+	}
+
+	private loadKeywordOptions(): void {
+		const transaction = this.data.transaction;
+
+		this.apiClient.transactions.standard
+			.getKeywordOptions({
+				connectionId: transaction.connection_id,
+				accountId: transaction.account_id,
+				transactionId: transaction.transaction_id,
+			})
+			.subscribe({
+				next: (response) => {
+					this.options.set(response.options);
+					this.selected.set(this.initialOption(response));
+					this.optionsLoading.set(false);
+				},
+				error: () => {
+					this.optionsFailed.set(true);
+					this.optionsLoading.set(false);
+				},
+			});
+	}
+
+	/** Open on the rule that decides the row, or on the whole description when nothing matches it. */
+	private initialOption(response: TransactionKeywordResponse): TransactionKeywordOption | null {
+		const effectiveRule = response.effective_rule;
+
+		if (effectiveRule !== null) {
+			return response.options.find((option) => option.match_type === effectiveRule.match_type && option.pattern === effectiveRule.pattern) ?? null;
+		}
+
+		return response.options.find((option) => option.source === "description") ?? null;
 	}
 }
 

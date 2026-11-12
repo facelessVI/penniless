@@ -170,13 +170,39 @@ class TransactionCategoryRequest(BaseModel):
     connection_id: str
     account_id: str
     transaction_id: str
+    match_type: str
+    pattern: str
     category: str
 
 
 class TransactionCategoryResponse(BaseModel):
     description: str
+    match_type: str
+    pattern: str
     category: str
+    matched: int
     updated: int
+    rule_deleted: bool
+
+
+class TransactionKeywordRule(BaseModel):
+    match_type: str
+    pattern: str
+    category: str
+
+
+class TransactionKeywordOption(BaseModel):
+    match_type: str
+    pattern: str
+    category: str | None
+    source: str
+    matched: int
+
+
+class TransactionKeywordResponse(BaseModel):
+    description: str
+    effective_rule: TransactionKeywordRule | None
+    options: list[TransactionKeywordOption]
 
 
 class CategoryItem(BaseModel):

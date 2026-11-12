@@ -160,8 +160,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
 	private buildCategoryMessage(result: TransactionDialogResult): string {
 		const plural = result.updated === 1 ? "" : "s";
+		const match = result.match_type === "contains" ? `keyword ${result.pattern}` : `description ${result.pattern}`;
 
-		return `${result.updated} transaction${plural} set to ${result.category}.`;
+		if (result.rule_deleted) {
+			return `${result.updated} transaction${plural} updated after removing ${match}.`;
+		}
+
+		return `${result.updated} transaction${plural} set to ${result.category} (${match}).`;
 	}
 
 	private setupSubscriptions(): void {

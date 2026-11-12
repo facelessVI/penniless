@@ -50,7 +50,12 @@ reset keeps.
 4. In the dashboard, turn off **Counts as cash** for credit cards and brokerages. The Bridge does
    not tell us account type reliably, so every account defaults to cash.
 5. Categorize merchants from the **Transactions** page. Nothing is pre-taught, so a fresh database
-   starts fully `Uncategorized` and gets better as you work through it.
+   starts fully `Uncategorized` and gets better as you work through it. Clicking a row opens a
+   **Keyword** select and a **Category** select. The keyword list is built from that description -
+   the whole description, its words, and two-word phrases - plus any rule that already matches it,
+   and each option shows how many stored transactions it would move. Pick a keyword, pick a
+   category, and save: every transaction containing that keyword moves, including ones fetched
+   later. Picking `Uncategorized` with a keyword removes that rule instead.
 
 ## Managing state
 
@@ -105,13 +110,20 @@ no file to edit.
     - A name is trimmed, may not be blank or contain a slash, may be at most 40 characters, and may
       not collide with an existing name in any case. Reordering is not built: new categories go to
       the end.
-- Click any transaction row on the **Transactions** page to open **Transaction**, pick a category, and
-  save. Every stored row with that exact description moves with it, and rows fetched later arrive
-  already categorized. The select opens on the row's current category, so re-picking is a correction.
-- A rule matches the whole description. `SPOTIFY USA` and `SPOTIFY USA 877-7781161 NY` are different
-  merchants, so a merchant whose description changes has to be taught again.
-- Anything without a rule is `Uncategorized`, and `Uncategorized` is a selectable category, so
-  selecting it is how a rule is taken back off a merchant.
+- Click any transaction row on the **Transactions** page to open **Transaction**. The **Keyword**
+  select opens on the rule that decides the row (or on the whole description when nothing matches
+  it) and the **Category** select opens on the row's current category. Saving writes or re-points that
+  pattern and re-labels every row it matches, across accounts and the whole history; rows fetched
+  later arrive already categorized.
+- A rule is a pattern with a match type. `exact` matches the whole description and stays
+  case-sensitive; `contains` matches a case-insensitive substring, which is what makes
+  `SPOTIFY USA 877-7781161 NY` follow a `SPOTIFY USA` rule. When several rules match, the most
+  specific one wins: `exact` first, then the longer pattern, then the most recently updated rule, so
+  a description that has its own exact rule keeps it even when a keyword also covers it.
+- Anything without a rule is `Uncategorized`, and `Uncategorized` is a selectable category: choosing
+  it with a keyword deletes that keyword's rule, and its rows fall back to the next matching rule.
+  That is the only way a rule is removed, so a keyword that no longer matches any stored row cannot
+  be deleted from the UI yet.
 - `Transfers` is only a category. A row whose category is `Transfers` is a transfer, which excludes it
   from in/out totals and renders it muted.
 - Invalid category data fails at startup and before every fetch, so a bad row cannot spend quota.
