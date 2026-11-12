@@ -36,6 +36,30 @@ html {
 			/* Denser rows: this app is mostly tables and compact status strips. */ density: -1,
 		)
 	);
+
+	/* Selection stays in the slate family rather than turning into an earth-colored state fill. */
+	@include mat.button-toggle-overrides(
+		(
+			selected-state-background-color: var(--mat-sys-primary-container),
+			selected-state-text-color: var(--mat-sys-on-primary-container),
+		)
+	);
+	@include mat.slide-toggle-overrides(
+		(
+			unselected-track-color: var(--mat-sys-primary-container),
+			unselected-hover-track-color: var(--mat-sys-primary-container),
+			unselected-focus-track-color: var(--mat-sys-primary-container),
+			unselected-pressed-track-color: var(--mat-sys-primary-container),
+			unselected-handle-color: var(--mat-sys-on-primary-container),
+			unselected-hover-handle-color: var(--mat-sys-on-primary-container),
+			unselected-focus-handle-color: var(--mat-sys-on-primary-container),
+			unselected-pressed-handle-color: var(--mat-sys-on-primary-container),
+			unselected-icon-color: var(--mat-sys-primary-container),
+			unselected-hover-state-layer-color: var(--mat-sys-primary),
+			unselected-focus-state-layer-color: var(--mat-sys-primary),
+			unselected-pressed-state-layer-color: var(--mat-sys-primary),
+		)
+	);
 }
 
 /* App-level design tokens. Everything reads from these, never from a literal. */
