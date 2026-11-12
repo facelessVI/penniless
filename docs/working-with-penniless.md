@@ -50,7 +50,12 @@ reset keeps.
 4. In the dashboard, turn off **Counts as cash** for credit cards and brokerages. The Bridge does
    not tell us account type reliably, so every account defaults to cash.
 5. Categorize merchants from the **Transactions** page. Nothing is pre-taught, so a fresh database
-   starts fully `Uncategorized` and gets better as you work through it.
+   starts fully `Uncategorized` and gets better as you work through it. Clicking a row opens a
+   **Keyword** select and a **Category** select. The keyword list is built from that description -
+   the whole description, its words, and two-word phrases - plus any rule that already matches it,
+   and each option shows how many stored transactions it would move. Pick a keyword, pick a
+   category, and save: every transaction containing that keyword moves, including ones fetched
+   later. Picking `Uncategorized` with a keyword removes that rule instead.
 
 ## Managing state
 

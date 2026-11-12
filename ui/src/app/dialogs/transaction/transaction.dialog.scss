@@ -51,8 +51,19 @@
 		--mat-dialog-actions-alignment: space-between;
 	}
 
+	.keyword-field,
 	.category-field {
 		width: 100%;
+	}
+
+	.keyword-field {
+		margin-bottom: 1rem;
+	}
+
+	.save-reason {
+		margin: 0.5rem 0 0;
+		color: var(--text-muted);
+		font: var(--mat-sys-body-small);
 	}
 
 	.match-note {
