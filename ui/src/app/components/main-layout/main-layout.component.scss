@@ -63,8 +63,8 @@ app-main-layout {
 				}
 
 				&.active {
-					background: var(--mat-sys-secondary-container);
-					color: var(--mat-sys-on-secondary-container);
+					background: var(--mat-sys-primary-container);
+					color: var(--mat-sys-on-primary-container);
 				}
 			}
 		}

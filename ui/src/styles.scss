@@ -1,4 +1,5 @@
 @use "@angular/material" as mat;
+@use "../theme-colors" as penniless-theme;
 
 html {
 	color-scheme: light dark;
@@ -7,8 +8,8 @@ html {
 	@include mat.theme(
 		(
 			color: (
-				primary: mat.$green-palette,
-				tertiary: mat.$azure-palette,
+				primary: penniless-theme.$primary-palette,
+				tertiary: penniless-theme.$tertiary-palette,
 			),
 			typography: (
 				plain-family: (
@@ -45,7 +46,16 @@ html {
 	--text-muted: var(--mat-sys-on-surface-variant);
 	--border: var(--mat-sys-outline-variant);
 	/* Transfers stay visible but recede, so they never read as income or spend. */
-	--transfer-muted: var(--mat-sys-outline);
+	--transfer-muted: var(--mat-sys-on-surface-variant);
+	/* Income keeps its semantic color rather than following the brand primary. */
+	--success: #3e6b4f;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--success: #a8c7ad;
+		--transfer-muted: var(--mat-sys-outline);
+	}
 }
 
 *,
