@@ -1,4 +1,5 @@
 @use "@angular/material" as mat;
+@use "../theme-colors" as penniless-theme;
 
 html {
 	color-scheme: light dark;
@@ -7,8 +8,8 @@ html {
 	@include mat.theme(
 		(
 			color: (
-				primary: mat.$green-palette,
-				tertiary: mat.$azure-palette,
+				primary: penniless-theme.$primary-palette,
+				tertiary: penniless-theme.$tertiary-palette,
 			),
 			typography: (
 				plain-family: (
@@ -35,6 +36,30 @@ html {
 			/* Denser rows: this app is mostly tables and compact status strips. */ density: -1,
 		)
 	);
+
+	/* Selection stays in the primary navy family rather than using a secondary-colored state fill. */
+	@include mat.button-toggle-overrides(
+		(
+			selected-state-background-color: var(--mat-sys-primary-container),
+			selected-state-text-color: var(--mat-sys-on-primary-container),
+		)
+	);
+	@include mat.slide-toggle-overrides(
+		(
+			unselected-track-color: var(--mat-sys-primary-container),
+			unselected-hover-track-color: var(--mat-sys-primary-container),
+			unselected-focus-track-color: var(--mat-sys-primary-container),
+			unselected-pressed-track-color: var(--mat-sys-primary-container),
+			unselected-handle-color: var(--mat-sys-on-primary-container),
+			unselected-hover-handle-color: var(--mat-sys-on-primary-container),
+			unselected-focus-handle-color: var(--mat-sys-on-primary-container),
+			unselected-pressed-handle-color: var(--mat-sys-on-primary-container),
+			unselected-icon-color: var(--mat-sys-primary-container),
+			unselected-hover-state-layer-color: var(--mat-sys-primary),
+			unselected-focus-state-layer-color: var(--mat-sys-primary),
+			unselected-pressed-state-layer-color: var(--mat-sys-primary),
+		)
+	);
 }
 
 /* App-level design tokens. Everything reads from these, never from a literal. */
@@ -45,7 +70,16 @@ html {
 	--text-muted: var(--mat-sys-on-surface-variant);
 	--border: var(--mat-sys-outline-variant);
 	/* Transfers stay visible but recede, so they never read as income or spend. */
-	--transfer-muted: var(--mat-sys-outline);
+	--transfer-muted: var(--mat-sys-on-surface-variant);
+	/* Income keeps its semantic color rather than following the brand primary. */
+	--success: #3e6b4f;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--success: #a8c7ad;
+		--transfer-muted: var(--mat-sys-outline);
+	}
 }
 
 *,
