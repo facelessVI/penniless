@@ -23,14 +23,14 @@ export class DashboardPage implements OnInit, OnDestroy {
 	protected readonly refreshBlockedReason = computed(() => {
 		const status = this.service.status();
 
-		if (status === null || status.refresh_allowed || status.next_refresh_allowed_at === null) {
+		if (status === null || status.refreshAllowed || status.nextRefreshAllowedAt === null) {
 			return null;
 		}
 
-		return `Refresh is paused until ${new Date(status.next_refresh_allowed_at).toLocaleString()}, the minimum gap of ${status.refresh_min_interval_hours} hours.`;
+		return `Refresh is paused until ${new Date(status.nextRefreshAllowedAt).toLocaleString()}, the minimum gap of ${status.refreshMinIntervalHours} hours.`;
 	});
 
-	protected readonly canRefresh = computed(() => this.service.status()?.refresh_allowed ?? false);
+	protected readonly canRefresh = computed(() => this.service.status()?.refreshAllowed ?? false);
 
 	ngOnInit(): void {
 		this.service.load();

@@ -34,7 +34,6 @@ penniless-settings-categories {
 	.categories-table {
 		width: 100%;
 
-		/* Counts line up column to column, the way the money columns do on the transaction tables. */
 		th.cell-count,
 		td.cell-count {
 			width: 8rem;
@@ -55,7 +54,6 @@ penniless-settings-categories {
 		}
 	}
 
-	/* The two names the app depends on: visible, but not a category the user can edit. */
 	.built-in-label {
 		display: inline-block;
 		margin-left: 0.5rem;
@@ -67,7 +65,6 @@ penniless-settings-categories {
 		white-space: nowrap;
 	}
 
-	/* A row action reads lighter than the stock 24px icon. Material sizes it through this token. */
 	.cell-actions button {
 		--mat-icon-button-icon-size: 18px;
 	}

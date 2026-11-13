@@ -1,7 +1,6 @@
 :host {
 	display: block;
 
-	/* The row's own facts, carded so the category select below reads as the action. */
 	.transaction-details {
 		display: grid;
 		grid-template-columns: max-content minmax(0, 1fr);
@@ -25,12 +24,10 @@
 			overflow-wrap: anywhere;
 		}
 
-		/* The description is what a rule keys on, so it carries the emphasis. */
 		.description {
 			font-weight: 500;
 		}
 
-		/* The figure reads as the outcome of the row, so it steps up a size and keeps its colour. */
 		.amount {
 			font: var(--mat-sys-title-medium);
 			font-variant-numeric: tabular-nums;

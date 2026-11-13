@@ -5,7 +5,6 @@ import { SetupStandardService } from "./setup/standard";
 import { SummaryStandardService } from "./summary/standard";
 import { TransactionsStandardService } from "./transactions/standard";
 
-/** Single facade over every HTTP service: callers read `<component>.<tier>`. */
 @Injectable({ providedIn: "root" })
 export class ApiClientService {
 	readonly setup = {

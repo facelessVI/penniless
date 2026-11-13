@@ -3,6 +3,7 @@ import { AccountResponse } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
 import { BackfillContract } from "@shared/api/setup/model";
 import { SummaryResponse } from "@shared/api/summary/model";
+import { DataOperationService } from "@shared/services/data-operation.service";
 import { StatusService } from "@shared/services/status.service";
 import { firstDayOfMonth, fromIsoDate, toIsoDate } from "@shared/utils/date.util";
 import { formatCents, formatSignedCents } from "@shared/utils/money.util";
@@ -27,10 +28,10 @@ export type DashboardSortColumn = "connection" | "balance";
 export type DashboardSortDirection = "asc" | "desc";
 
 const compareConnections = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
-	first.connection_name.localeCompare(second.connection_name) || first.name.localeCompare(second.name);
+	first.connectionName.localeCompare(second.connectionName) || first.name.localeCompare(second.name);
 
 const compareBalances = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
-	first.balance_cents - second.balance_cents || compareConnections(first, second);
+	first.balanceCents - second.balanceCents || compareConnections(first, second);
 
 const SORT_COMPARATORS: Record<DashboardSortColumn, (first: DashboardAccountRow, second: DashboardAccountRow) => number> = {
 	connection: compareConnections,
@@ -44,12 +45,31 @@ const PERIOD_DATE_FORMAT_WITH_YEAR = new Intl.DateTimeFormat("en-US", { month: "
 export class DashboardPageService {
 	private readonly apiClient = inject(ApiClientService);
 	private readonly statusService = inject(StatusService);
+	private readonly dataOperation = inject(DataOperationService);
 
 	readonly accounts = signal<AccountResponse[]>([]);
 	readonly summary = signal<SummaryResponse | null>(null);
 	readonly status = this.statusService.status;
+	/** The page's own first paint: summary and accounts, joined so the tables do not pop in one at a time. */
 	readonly loading = signal(true);
-	readonly busy = signal(false);
+	/** A cash-toggle write is in flight, so the toggles stay disabled until it settles. */
+	readonly savingCash = signal(false);
+	/** An action that must not overlap another one is running; the one long state the app shares. */
+	readonly busy = this.dataOperation.busy;
+	readonly operationLabel = computed(() => {
+		switch (this.dataOperation.active()) {
+			case "refresh":
+				return "Refreshing…";
+			case "backfill":
+				return "Backfilling 12 months…";
+			case "apply-rules":
+				return "Re-applying rules…";
+			case "connect":
+				return "Connecting…";
+			case null:
+				return null;
+		}
+	});
 	readonly rulesMessage = signal<string | null>(null);
 	readonly sortColumn = signal<DashboardSortColumn | null>(null);
 	readonly sortDirection = signal<DashboardSortDirection | null>(null);
@@ -57,7 +77,7 @@ export class DashboardPageService {
 	readonly accountRows = computed<DashboardAccountRow[]>(() => {
 		const rows = this.accounts().map((account) => ({
 			...account,
-			balanceLabel: formatCents(account.balance_cents, account.currency),
+			balanceLabel: formatCents(account.balanceCents, account.currency),
 		}));
 		const column = this.sortColumn();
 		const direction = this.sortDirection();
@@ -80,18 +100,18 @@ export class DashboardPageService {
 		}
 
 		return {
-			totalIn: formatCents(summary.total_in_cents),
-			totalOut: formatCents(summary.total_out_cents),
-			net: formatSignedCents(summary.net_cents),
-			cash: formatCents(summary.cash_total_cents),
-			netWorth: formatCents(summary.net_worth_cents),
-			transactionCount: summary.transaction_count,
+			totalIn: formatCents(summary.totalInCents),
+			totalOut: formatCents(summary.totalOutCents),
+			net: formatSignedCents(summary.netCents),
+			cash: formatCents(summary.cashTotalCents),
+			netWorth: formatCents(summary.netWorthCents),
+			transactionCount: summary.transactionCount,
 			periodLabel: this.formatPeriod(summary.start, summary.end),
 		};
 	});
 
 	readonly hasAccounts = computed(() => this.accounts().length > 0);
-	readonly fetchFailed = computed(() => this.status()?.last_fetch_status === "error");
+	readonly fetchFailed = computed(() => this.status()?.lastFetchStatus === "error");
 
 	load(): void {
 		this.loading.set(true);
@@ -134,31 +154,31 @@ export class DashboardPageService {
 	}
 
 	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
-		this.busy.set(true);
+		this.savingCash.set(true);
 
-		this.apiClient.accounts.standard.updateIncludeInCash(account.connection_id, account.account_id, { include_in_cash: includeInCash }).subscribe({
+		this.apiClient.accounts.standard.updateIncludeInCash(account.connectionId, account.accountId, { includeInCash }).subscribe({
 			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (candidate.account_id === updated.account_id ? updated : candidate)));
-				this.busy.set(false);
+				this.accounts.update((accounts) => accounts.map((candidate) => (candidate.accountId === updated.accountId ? updated : candidate)));
+				this.savingCash.set(false);
 				this.refreshSummary();
 			},
 			error: () => {
-				this.busy.set(false);
+				this.savingCash.set(false);
 				this.reloadAccounts();
 			},
 		});
 	}
 
 	refresh(): void {
-		this.busy.set(true);
+		this.dataOperation.start("refresh");
 
 		this.apiClient.setup.standard.refresh().subscribe({
 			next: () => {
-				this.busy.set(false);
+				this.dataOperation.stop();
 				this.load();
 			},
 			error: () => {
-				this.busy.set(false);
+				this.dataOperation.stop();
 				// A 429 means the guard is active: reload the status so the reason is shown.
 				this.statusService.refresh().subscribe({ next: () => undefined });
 			},
@@ -166,32 +186,32 @@ export class DashboardPageService {
 	}
 
 	applyRules(): void {
-		this.busy.set(true);
+		this.dataOperation.start("apply-rules");
 		this.rulesMessage.set(null);
 
 		this.apiClient.categories.standard.applyCategories().subscribe({
 			next: (result) => {
-				this.busy.set(false);
+				this.dataOperation.stop();
 				this.rulesMessage.set(
 					`${result.updated} transaction${result.updated === 1 ? "" : "s"} re-categorized, ${result.uncategorized} left uncategorized.`,
 				);
 				this.load();
 			},
-			error: () => this.busy.set(false),
+			error: () => this.dataOperation.stop(),
 		});
 	}
 
 	backfill(): void {
 		const contract: BackfillContract = { months: BACKFILL_MONTHS };
 
-		this.busy.set(true);
+		this.dataOperation.start("backfill");
 
 		this.apiClient.setup.standard.backfill(contract).subscribe({
 			next: () => {
-				this.busy.set(false);
+				this.dataOperation.stop();
 				this.load();
 			},
-			error: () => this.busy.set(false),
+			error: () => this.dataOperation.stop(),
 		});
 	}
 
@@ -199,12 +219,13 @@ export class DashboardPageService {
 		this.accounts.set([]);
 		this.summary.set(null);
 		this.loading.set(true);
-		this.busy.set(false);
+		this.savingCash.set(false);
 		this.rulesMessage.set(null);
 		this.sortColumn.set(null);
 		this.sortDirection.set(null);
 	}
 
+	/** Both cards read the summary, so a toggle makes them stale until it is refetched. */
 	private refreshSummary(): void {
 		const today = new Date();
 

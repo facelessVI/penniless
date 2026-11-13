@@ -1,7 +1,6 @@
 # Working with Penniless
 
-Short operational guide. Deep context (design decisions, gotchas, API details) lives in
-`docs/working-with-penniless.md`. This file is just how to run and manage the thing.
+Short operational guide: how to run and manage the thing.
 
 ## What it is
 
@@ -18,7 +17,7 @@ them from rules you teach it, and reports money in / out / net per period. FastA
 ## Getting started
 
 ```bash
-cd penniless
+cd penniless              # the repo root
 npm run install:all      # root npm install, uv sync, ui npm install
 npm run dev              # fixture mode, both processes
 ```

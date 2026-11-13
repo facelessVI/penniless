@@ -5,7 +5,6 @@ import { provideRouter } from "@angular/router";
 
 import { routes } from "./app.routes";
 import { errorInterceptor } from "@shared/interceptors/error.interceptor";
-import { loadingInterceptor } from "@shared/interceptors/loading.interceptor";
 
 /** Padded month and day, so a date field reformats to `MM/DD/YYYY` on blur and not `M/D/YYYY`. */
 const DATE_FORMATS: MatDateFormats = {
@@ -21,7 +20,7 @@ export const appConfig: ApplicationConfig = {
 		provideBrowserGlobalErrorListeners(),
 		provideZonelessChangeDetection(),
 		provideRouter(routes),
-		provideHttpClient(withInterceptors([errorInterceptor, loadingInterceptor])),
+		provideHttpClient(withInterceptors([errorInterceptor])),
 		provideNativeDateAdapter(DATE_FORMATS),
 	],
 };

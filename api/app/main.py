@@ -6,9 +6,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import categorize, db
-from app.config import settings
-from app.routers import accounts, categories, setup, transactions
+from app.accounts.router import accounts_router
+from app.categories.router import categories_router
+from app.categories.service import categories_service
+from app.common import db, handlers, migrations
+from app.common.config import settings
+from app.setup.router import setup_router
+from app.transactions.router import transactions_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
@@ -23,18 +27,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     preserved_rules = db.read_rules_snapshot(settings.database_path) if settings.source == "fixture" else []
 
     if settings.source == "fixture":
-        db.reset_database()
+        migrations.reset_database(settings.database_path)
         logger.info("rebuilt fixture database at %s", settings.database_path)
 
     connection = db.connect()
 
     try:
-        applied_filenames = db.run_migrations(connection)
+        applied_filenames = migrations.run_migrations(connection)
         restored_rules = db.restore_rules(connection, preserved_rules)
 
         # Category data is validated after migrations and before the first fetch: broken rules must
         # fail startup rather than a fetch, because SimpleFIN calls cost quota.
-        rules = categorize.load_rules(connection)
+        rules = categories_service.get_category_rules(connection)
     finally:
         connection.close()
 
@@ -54,7 +58,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Penniless API", lifespan=lifespan)
 
-app.include_router(setup.router, prefix="/api")
-app.include_router(accounts.router, prefix="/api")
-app.include_router(transactions.router, prefix="/api")
-app.include_router(categories.router, prefix="/api")
+handlers.register_exception_handlers(app)
+
+app.include_router(setup_router.router, prefix="/api")
+app.include_router(accounts_router.router, prefix="/api")
+app.include_router(transactions_router.router, prefix="/api")
+app.include_router(categories_router.router, prefix="/api")

@@ -40,7 +40,7 @@ export class TransactionsPageService {
 	readonly rows = computed<TransactionRow[]>(() =>
 		this.items().map((item) => ({
 			...item,
-			amountLabel: formatSignedCents(item.amount_cents),
+			amountLabel: formatSignedCents(item.amountCents),
 			isTransfer: item.category === TRANSFERS_CATEGORY,
 		})),
 	);

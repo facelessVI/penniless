@@ -3,16 +3,16 @@
 <mat-dialog-content>
 	<dl class="transaction-details">
 		<dt>Date</dt>
-		<dd>{{ data.transaction.posted_date }}</dd>
+		<dd>{{ data.transaction.postedDate }}</dd>
 
 		<dt>Account</dt>
-		<dd>{{ data.transaction.account_name }}</dd>
+		<dd>{{ data.transaction.accountName }}</dd>
 
 		<dt>Description</dt>
 		<dd class="description">{{ data.transaction.description }}</dd>
 
 		<dt>Amount</dt>
-		<dd class="amount" [class.amount-in]="data.transaction.amount_cents > 0" [class.amount-out]="data.transaction.amount_cents < 0">
+		<dd class="amount" [class.amount-in]="data.transaction.amountCents > 0" [class.amount-out]="data.transaction.amountCents < 0">
 			{{ amountLabel }}
 		</dd>
 	</dl>
@@ -25,7 +25,7 @@
 			[disabled]="optionsLoading() || optionsFailed()"
 			(selectionChange)="onKeywordChange($event)"
 		>
-			@for (option of options(); track option.match_type + "|" + option.pattern) {
+			@for (option of options(); track option.matchType + "|" + option.pattern) {
 				<mat-option [value]="option">{{ optionLabel(option) }}</mat-option>
 			}
 		</mat-select>
