@@ -11,7 +11,7 @@ from app.categories.router import categories_router
 from app.categories.service import categories_service
 from app.common import db, handlers, migrations
 from app.common.config import settings
-from app.routers import setup
+from app.setup.router import setup_router
 from app.transactions.router import transactions_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
@@ -60,7 +60,7 @@ app = FastAPI(title="Penniless API", lifespan=lifespan)
 
 handlers.register_exception_handlers(app)
 
-app.include_router(setup.router, prefix="/api")
+app.include_router(setup_router.router, prefix="/api")
 app.include_router(accounts_router.router, prefix="/api")
 app.include_router(transactions_router.router, prefix="/api")
 app.include_router(categories_router.router, prefix="/api")

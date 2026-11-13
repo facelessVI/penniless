@@ -2,8 +2,6 @@
 
 import re
 
-from fastapi import HTTPException
-
 MAX_MESSAGE_LENGTH = 300
 USERINFO_PATTERN = re.compile(r"//[^/@\s]+@")
 
@@ -15,8 +13,6 @@ ACCESS_REJECTED_MESSAGE = (
     "SimpleFIN rejected the stored access URL. Access may have been revoked; connect again with a fresh setup token."
 )
 PAYMENT_REQUIRED_MESSAGE = "SimpleFIN reports that the Bridge subscription needs payment."
-NOT_CONNECTED_MESSAGE = "No access URL is stored yet. Connect with a setup token first."
-ALREADY_CONNECTED_MESSAGE = "Already connected. Send replace=true to claim a new access URL."
 INVALID_BASE64_MESSAGE = "setup token is not valid base64"
 INVALID_CLAIM_URL_MESSAGE = "setup token does not decode to an https claim URL"
 
@@ -68,7 +64,3 @@ def upstream_error(status_code: int, body: str = "", error_code: str | None = No
         message = f"SimpleFIN returned HTTP {status_code}: {detail}"
 
     return SimpleFinError(message=message, status_code=502, error_code=error_code)
-
-
-def not_connected_error() -> HTTPException:
-    return HTTPException(status_code=409, detail=NOT_CONNECTED_MESSAGE)

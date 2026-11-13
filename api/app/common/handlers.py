@@ -22,6 +22,11 @@ from app.categories.errors.categories_errors import (
     UnknownTransactionError,
 )
 from app.common import errors
+from app.setup.errors.setup_errors import (
+    AlreadyConnectedError,
+    NotConnectedError,
+    RefreshNotAllowedError,
+)
 from app.transactions.errors.transactions_errors import InvalidDateRangeError
 
 # Every domain error the API translates, with the status it answers with. A 400 is a
@@ -35,6 +40,8 @@ DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     UnknownRuleError: 400,
     UnknownCategoryError: 404,
     UnknownTransactionError: 404,
+    AlreadyConnectedError: 409,
+    NotConnectedError: 409,
 }
 
 
@@ -54,8 +61,24 @@ def simplefin_handler(_: Request, error: Exception) -> JSONResponse:
     return JSONResponse(status_code=failure.status_code, content={"detail": failure.message})
 
 
+def refresh_not_allowed_handler(_: Request, error: Exception) -> JSONResponse:
+    """The one body that carries more than a detail: the guard tells the UI when to try again."""
+    failure = cast(RefreshNotAllowedError, error)
+
+    # A hand-built body is not aliased by ApiModel, so it spells the camelCase keys itself.
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": str(failure),
+            "refreshAllowed": False,
+            "nextRefreshAllowedAt": failure.next_allowed_at,
+        },
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     for error_class, status_code in DOMAIN_ERROR_STATUSES.items():
         app.add_exception_handler(error_class, status_handler(status_code))
 
     app.add_exception_handler(errors.SimpleFinError, simplefin_handler)
+    app.add_exception_handler(RefreshNotAllowedError, refresh_not_allowed_handler)
