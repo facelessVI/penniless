@@ -55,18 +55,9 @@ def post_connect(
         raise HTTPException(status_code=409, detail=errors.ALREADY_CONNECTED_MESSAGE)
 
     source = simplefin.get_account_source()
-
-    try:
-        access_url = source.claim(request.setup_token)
-    except errors.SimpleFinError as error:
-        raise error.to_http_exception() from error
-
+    access_url = source.claim(request.setup_token)
     stored_credentials = credentials.write_credentials(access_url)
-
-    try:
-        backfill = ingest.run_backfill(connection, source, stored_credentials.access_url)
-    except errors.SimpleFinError as error:
-        raise error.to_http_exception() from error
+    backfill = ingest.run_backfill(connection, source, stored_credentials.access_url)
 
     return ConnectResponse(
         connected=True,
@@ -101,12 +92,7 @@ def post_refresh(
         )
 
     source = simplefin.get_account_source()
-
-    try:
-        result = ingest.run_refresh(connection, source, stored_credentials.access_url)
-    except errors.SimpleFinError as error:
-        raise error.to_http_exception() from error
-
+    result = ingest.run_refresh(connection, source, stored_credentials.access_url)
     next_guard = ingest.refresh_guard(connection)
 
     return RefreshResponse(
@@ -129,10 +115,6 @@ def post_backfill(
         raise errors.not_connected_error()
 
     source = simplefin.get_account_source()
-
-    try:
-        backfill = ingest.run_backfill(connection, source, stored_credentials.access_url, request.months)
-    except errors.SimpleFinError as error:
-        raise error.to_http_exception() from error
+    backfill = ingest.run_backfill(connection, source, stored_credentials.access_url, request.months)
 
     return BackfillResponse(windows=len(backfill.windows), transactions_stored=backfill.transactions_stored)

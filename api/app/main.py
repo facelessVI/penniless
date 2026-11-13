@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import categorize, db
+from app import categorize, db, handlers
 from app.config import settings
 from app.routers import accounts, categories, setup, transactions
 
@@ -53,6 +53,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Penniless API", lifespan=lifespan)
+
+handlers.register_exception_handlers(app)
 
 app.include_router(setup.router, prefix="/api")
 app.include_router(accounts.router, prefix="/api")

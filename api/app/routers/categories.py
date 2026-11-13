@@ -3,7 +3,7 @@
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app import categorize, db
 from app.schemas import (
@@ -21,10 +21,7 @@ router = APIRouter(tags=["categories"])
 def list_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    try:
-        categorize.load_rules(connection)
-    except categorize.CategoryRulesError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    categorize.load_rules(connection)
 
     return to_categories_response(connection)
 
@@ -34,10 +31,7 @@ def create_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    try:
-        categorize.create_category(connection, request.name)
-    except categorize.CategoryNameError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    categorize.create_category(connection, request.name)
 
     return to_categories_response(connection)
 
@@ -48,14 +42,7 @@ def rename_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    try:
-        categorize.rename_category(connection, name, request.name)
-    except categorize.CategoryNameError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.ProtectedCategoryError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.UnknownCategoryError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    categorize.rename_category(connection, name, request.name)
 
     return to_categories_response(connection)
 
@@ -65,13 +52,7 @@ def delete_category(
     name: str,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoryDeleteResponse:
-    try:
-        result = categorize.delete_category(connection, name)
-    except categorize.ProtectedCategoryError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.UnknownCategoryError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
-
+    result = categorize.delete_category(connection, name)
     response = to_categories_response(connection)
 
     return CategoryDeleteResponse(
@@ -86,11 +67,7 @@ def delete_category(
 def apply_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> ApplyCategoriesResponse:
-    try:
-        rules = categorize.load_rules(connection)
-    except categorize.CategoryRulesError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-
+    rules = categorize.load_rules(connection)
     result = categorize.apply_rules(connection, rules)
 
     return ApplyCategoriesResponse(updated=result.updated, uncategorized=result.uncategorized)

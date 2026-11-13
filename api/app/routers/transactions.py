@@ -165,10 +165,7 @@ def list_transaction_keywords(
     account_id: Annotated[str, Query(description="The transaction's account")],
     transaction_id: Annotated[str, Query(description="The transaction's id")],
 ) -> TransactionKeywordResponse:
-    try:
-        options = categorize.list_keyword_options(connection, connection_id, account_id, transaction_id)
-    except categorize.UnknownTransactionError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    options = categorize.list_keyword_options(connection, connection_id, account_id, transaction_id)
 
     return to_keyword_response(options)
 
@@ -178,24 +175,15 @@ def assign_transaction_category(
     request: TransactionCategoryRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> TransactionCategoryResponse:
-    try:
-        result = categorize.assign_category(
-            connection,
-            request.connection_id,
-            request.account_id,
-            request.transaction_id,
-            request.category,
-            request.match_type,
-            request.pattern,
-        )
-    except categorize.CategoryRulesError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.RulePatternError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.UnknownRuleError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except categorize.UnknownTransactionError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    result = categorize.assign_category(
+        connection,
+        request.connection_id,
+        request.account_id,
+        request.transaction_id,
+        request.category,
+        request.match_type,
+        request.pattern,
+    )
 
     return TransactionCategoryResponse(
         description=result.description,

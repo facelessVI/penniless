@@ -43,9 +43,6 @@ class SimpleFinError(Exception):
 
         super().__init__(self.message)
 
-    def to_http_exception(self) -> HTTPException:
-        return HTTPException(status_code=self.status_code, detail=self.message)
-
 
 def invalid_setup_token_error(message: str) -> SimpleFinError:
     return SimpleFinError(message=message, status_code=400)
