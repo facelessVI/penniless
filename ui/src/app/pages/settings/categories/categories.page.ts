@@ -104,22 +104,22 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 	}
 
 	private buildDeleteMessage(category: CategoryItem): string {
-		if (category.transaction_count === 0 && category.rule_count === 0) {
+		if (category.transactionCount === 0 && category.ruleCount === 0) {
 			return "Nothing uses this category";
 		}
 
-		const moved = this.buildMoveSummary(category.transaction_count, category.rule_count);
-		const verb = category.transaction_count + category.rule_count === 1 ? "moves" : "move";
+		const moved = this.buildMoveSummary(category.transactionCount, category.ruleCount);
+		const verb = category.transactionCount + category.ruleCount === 1 ? "moves" : "move";
 
 		return `${moved} ${verb} to ${this.service.uncategorized()}`;
 	}
 
 	private buildDeletedMessage(name: string, response: CategoryDeleteResponse): string {
-		if (response.moved_transactions === 0 && response.deleted_rules === 0) {
+		if (response.movedTransactions === 0 && response.deletedRules === 0) {
 			return `Category ${name} deleted`;
 		}
 
-		const moved = this.buildMoveSummary(response.moved_transactions, response.deleted_rules);
+		const moved = this.buildMoveSummary(response.movedTransactions, response.deletedRules);
 
 		return `Category ${name} deleted. ${moved} moved to ${this.service.uncategorized()}`;
 	}

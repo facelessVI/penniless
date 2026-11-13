@@ -3,6 +3,18 @@
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
+
+
+class ApiModel(BaseModel):
+    """Base for the models this API defines, as opposed to the SimpleFIN payload it accepts.
+
+    The frontend speaks camelCase, so fields are serialized by a camelCase alias while Python keeps
+    snake_case attribute names. `populate_by_name` means a request body may use either spelling.
+    SimpleFin* models must never inherit this: those keys belong to the Bridge.
+    """
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class SimpleFinError(BaseModel):
@@ -71,25 +83,25 @@ class SimpleFinAccountSet(BaseModel):
     accounts: list[SimpleFinAccount] = []
 
 
-class HealthResponse(BaseModel):
+class HealthResponse(ApiModel):
     status: str
     source: str
     database: str
 
 
-class ConnectRequest(BaseModel):
+class ConnectRequest(ApiModel):
     setup_token: str
     replace: bool = False
 
 
-class ConnectResponse(BaseModel):
+class ConnectResponse(ApiModel):
     connected: bool
     account_count: int
     backfill_windows: int
     transactions_stored: int
 
 
-class StatusResponse(BaseModel):
+class StatusResponse(ApiModel):
     connected: bool
     source: str
     credential_claimed_at: str | None
@@ -103,7 +115,7 @@ class StatusResponse(BaseModel):
     refresh_min_interval_hours: float
 
 
-class RefreshResponse(BaseModel):
+class RefreshResponse(ApiModel):
     fetched: bool
     account_count: int
     transactions_stored: int
@@ -112,16 +124,16 @@ class RefreshResponse(BaseModel):
     next_refresh_allowed_at: str | None
 
 
-class BackfillRequest(BaseModel):
+class BackfillRequest(ApiModel):
     months: int = Field(default=12, ge=1, le=36)
 
 
-class BackfillResponse(BaseModel):
+class BackfillResponse(ApiModel):
     windows: int
     transactions_stored: int
 
 
-class AccountResponse(BaseModel):
+class AccountResponse(ApiModel):
     connection_id: str
     account_id: str
     connection_name: str
@@ -133,11 +145,11 @@ class AccountResponse(BaseModel):
     include_in_cash: bool
 
 
-class AccountUpdateRequest(BaseModel):
+class AccountUpdateRequest(ApiModel):
     include_in_cash: bool
 
 
-class SummaryResponse(BaseModel):
+class SummaryResponse(ApiModel):
     start: str
     end: str
     total_in_cents: int
@@ -148,7 +160,7 @@ class SummaryResponse(BaseModel):
     transaction_count: int
 
 
-class TransactionItem(BaseModel):
+class TransactionItem(ApiModel):
     connection_id: str
     account_id: str
     account_name: str
@@ -159,14 +171,14 @@ class TransactionItem(BaseModel):
     amount_cents: int
 
 
-class TransactionListResponse(BaseModel):
+class TransactionListResponse(ApiModel):
     items: list[TransactionItem]
     total: int
     limit: int
     offset: int
 
 
-class TransactionCategoryRequest(BaseModel):
+class TransactionCategoryRequest(ApiModel):
     connection_id: str
     account_id: str
     transaction_id: str
@@ -175,7 +187,7 @@ class TransactionCategoryRequest(BaseModel):
     category: str
 
 
-class TransactionCategoryResponse(BaseModel):
+class TransactionCategoryResponse(ApiModel):
     description: str
     match_type: str
     pattern: str
@@ -185,13 +197,13 @@ class TransactionCategoryResponse(BaseModel):
     rule_deleted: bool
 
 
-class TransactionKeywordRule(BaseModel):
+class TransactionKeywordRule(ApiModel):
     match_type: str
     pattern: str
     category: str
 
 
-class TransactionKeywordOption(BaseModel):
+class TransactionKeywordOption(ApiModel):
     match_type: str
     pattern: str
     category: str | None
@@ -199,13 +211,13 @@ class TransactionKeywordOption(BaseModel):
     matched: int
 
 
-class TransactionKeywordResponse(BaseModel):
+class TransactionKeywordResponse(ApiModel):
     description: str
     effective_rule: TransactionKeywordRule | None
     options: list[TransactionKeywordOption]
 
 
-class CategoryItem(BaseModel):
+class CategoryItem(ApiModel):
     name: str
     position: int
     transaction_count: int
@@ -213,12 +225,12 @@ class CategoryItem(BaseModel):
     protected: bool
 
 
-class CategoriesResponse(BaseModel):
+class CategoriesResponse(ApiModel):
     categories: list[CategoryItem]
     uncategorized: str
 
 
-class CategoryNameRequest(BaseModel):
+class CategoryNameRequest(ApiModel):
     name: str
 
 
@@ -227,6 +239,6 @@ class CategoryDeleteResponse(CategoriesResponse):
     deleted_rules: int
 
 
-class ApplyCategoriesResponse(BaseModel):
+class ApplyCategoriesResponse(ApiModel):
     updated: int
     uncategorized: int

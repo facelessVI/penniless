@@ -1,13 +1,13 @@
 export interface ConnectContract {
-	setup_token: string;
+	setupToken: string;
 	replace: boolean;
 }
 
 export interface ConnectResponse {
 	connected: boolean;
-	account_count: number;
-	backfill_windows: number;
-	transactions_stored: number;
+	accountCount: number;
+	backfillWindows: number;
+	transactionsStored: number;
 }
 
 export type DataSource = "live" | "fixture";
@@ -17,24 +17,24 @@ export type FetchStatus = "ok" | "error";
 export interface StatusResponse {
 	connected: boolean;
 	source: DataSource;
-	credential_claimed_at: string | null;
-	account_count: number;
-	transaction_count: number;
-	last_fetch_status: FetchStatus | null;
-	last_fetched_at: string | null;
-	last_fetch_error_code: string | null;
-	refresh_allowed: boolean;
-	next_refresh_allowed_at: string | null;
-	refresh_min_interval_hours: number;
+	credentialClaimedAt: string | null;
+	accountCount: number;
+	transactionCount: number;
+	lastFetchStatus: FetchStatus | null;
+	lastFetchedAt: string | null;
+	lastFetchErrorCode: string | null;
+	refreshAllowed: boolean;
+	nextRefreshAllowedAt: string | null;
+	refreshMinIntervalHours: number;
 }
 
 export interface RefreshResponse {
 	fetched: boolean;
-	account_count: number;
-	transactions_stored: number;
-	fetched_at: string;
-	refresh_allowed: boolean;
-	next_refresh_allowed_at: string | null;
+	accountCount: number;
+	transactionsStored: number;
+	fetchedAt: string;
+	refreshAllowed: boolean;
+	nextRefreshAllowedAt: string | null;
 }
 
 export interface BackfillContract {
@@ -43,5 +43,5 @@ export interface BackfillContract {
 
 export interface BackfillResponse {
 	windows: number;
-	transactions_stored: number;
+	transactionsStored: number;
 }

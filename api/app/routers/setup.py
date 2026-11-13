@@ -21,7 +21,7 @@ from app.schemas import (
 router = APIRouter(tags=["setup"])
 
 
-@router.get("/health")
+@router.get("/health", response_model=HealthResponse)
 def get_health() -> HealthResponse:
     return HealthResponse(status="ok", source=settings.source, database=str(settings.database_path))
 
@@ -90,12 +90,13 @@ def post_refresh(
     if not guard.allowed:
         message = f"Refresh is not allowed yet. Next refresh allowed at {guard.next_allowed_at}."
 
+        # A hand-built body is not aliased by ApiModel, so it spells the camelCase keys itself.
         return JSONResponse(
             status_code=429,
             content={
                 "detail": message,
-                "refresh_allowed": False,
-                "next_refresh_allowed_at": guard.next_allowed_at,
+                "refreshAllowed": False,
+                "nextRefreshAllowedAt": guard.next_allowed_at,
             },
         )
 

@@ -21,7 +21,7 @@ export class SetupPageService {
 
 	connect(setupToken: string, onConnected: () => void): void {
 		const contract: ConnectContract = {
-			setup_token: setupToken,
+			setupToken,
 			replace: this.statusService.connected(),
 		};
 

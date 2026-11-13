@@ -160,9 +160,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
 	private buildCategoryMessage(result: TransactionDialogResult): string {
 		const plural = result.updated === 1 ? "" : "s";
-		const match = result.match_type === "contains" ? `keyword ${result.pattern}` : `description ${result.pattern}`;
+		const match = result.matchType === "contains" ? `keyword ${result.pattern}` : `description ${result.pattern}`;
 
-		if (result.rule_deleted) {
+		if (result.ruleDeleted) {
 			return `${result.updated} transaction${plural} updated after removing ${match}`;
 		}
 

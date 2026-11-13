@@ -1,8 +1,8 @@
 export interface CategoryItem {
 	name: string;
 	position: number;
-	transaction_count: number;
-	rule_count: number;
+	transactionCount: number;
+	ruleCount: number;
 	protected: boolean;
 }
 
@@ -16,8 +16,8 @@ export interface CategoryNameContract {
 }
 
 export interface CategoryDeleteResponse extends CategoriesResponse {
-	moved_transactions: number;
-	deleted_rules: number;
+	movedTransactions: number;
+	deletedRules: number;
 }
 
 export interface ApplyCategoriesResponse {

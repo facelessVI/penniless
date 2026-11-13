@@ -39,10 +39,10 @@ export class TransactionDialog implements OnInit {
 	protected readonly selected = signal<TransactionKeywordOption | null>(null);
 	protected readonly selectedCategory = signal(this.data.transaction.category);
 	protected readonly loading = signal(false);
-	protected readonly amountLabel = formatSignedCents(this.data.transaction.amount_cents);
+	protected readonly amountLabel = formatSignedCents(this.data.transaction.amountCents);
 
 	/** The rule for this description as written, which outranks every keyword it also matches. */
-	private readonly exactRule = computed(() => this.options().find((option) => option.match_type === "exact" && option.category !== null) ?? null);
+	private readonly exactRule = computed(() => this.options().find((option) => option.matchType === "exact" && option.category !== null) ?? null);
 
 	private readonly isDelete = computed(() => this.selectedCategory() === UNCATEGORIZED_CATEGORY);
 
@@ -54,7 +54,7 @@ export class TransactionDialog implements OnInit {
 		return (
 			!this.isDelete() &&
 			selected !== null &&
-			selected.match_type === "contains" &&
+			selected.matchType === "contains" &&
 			exactRule !== null &&
 			exactRule.category !== this.selectedCategory()
 		);
@@ -112,7 +112,7 @@ export class TransactionDialog implements OnInit {
 
 	/** Material compares select values by identity; options are rebuilt on every open. */
 	protected compareOptions(first: TransactionKeywordOption | null, second: TransactionKeywordOption | null): boolean {
-		return first?.match_type === second?.match_type && first?.pattern === second?.pattern;
+		return first?.matchType === second?.matchType && first?.pattern === second?.pattern;
 	}
 
 	protected optionLabel(option: TransactionKeywordOption): string {
@@ -130,10 +130,10 @@ export class TransactionDialog implements OnInit {
 
 		const transaction = this.data.transaction;
 		const contract: TransactionCategoryContract = {
-			connection_id: transaction.connection_id,
-			account_id: transaction.account_id,
-			transaction_id: transaction.transaction_id,
-			match_type: selected.match_type,
+			connectionId: transaction.connectionId,
+			accountId: transaction.accountId,
+			transactionId: transaction.transactionId,
+			matchType: selected.matchType,
 			pattern: selected.pattern,
 			category: this.selectedCategory(),
 		};
@@ -156,9 +156,9 @@ export class TransactionDialog implements OnInit {
 
 		this.apiClient.transactions.standard
 			.getKeywordOptions({
-				connectionId: transaction.connection_id,
-				accountId: transaction.account_id,
-				transactionId: transaction.transaction_id,
+				connectionId: transaction.connectionId,
+				accountId: transaction.accountId,
+				transactionId: transaction.transactionId,
 			})
 			.subscribe({
 				next: (response) => {
@@ -175,10 +175,10 @@ export class TransactionDialog implements OnInit {
 
 	/** Open on the rule that decides the row, or on the whole description when nothing matches it. */
 	private initialOption(response: TransactionKeywordResponse): TransactionKeywordOption | null {
-		const effectiveRule = response.effective_rule;
+		const effectiveRule = response.effectiveRule;
 
 		if (effectiveRule !== null) {
-			return response.options.find((option) => option.match_type === effectiveRule.match_type && option.pattern === effectiveRule.pattern) ?? null;
+			return response.options.find((option) => option.matchType === effectiveRule.matchType && option.pattern === effectiveRule.pattern) ?? null;
 		}
 
 		return response.options.find((option) => option.source === "description") ?? null;

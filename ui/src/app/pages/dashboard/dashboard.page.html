@@ -21,11 +21,11 @@
 	@if (refreshBlockedReason(); as reason) {
 		<p class="refresh-note">
 			{{ reason }}
-			@if (service.status()?.last_fetched_at; as lastFetchedAt) {
+			@if (service.status()?.lastFetchedAt; as lastFetchedAt) {
 				<span>Last fetched {{ lastFetchedAt | date: "MMM d, h:mm a" }}.</span>
 			}
 		</p>
-	} @else if (service.status()?.last_fetched_at; as lastFetchedAt) {
+	} @else if (service.status()?.lastFetchedAt; as lastFetchedAt) {
 		<p class="refresh-note">Last fetched {{ lastFetchedAt | date: "MMM d, h:mm a" }}.</p>
 	} @else {
 		<p class="refresh-note">Nothing has been fetched from SimpleFIN yet.</p>
@@ -38,7 +38,7 @@
 	@if (service.fetchFailed()) {
 		<div class="reconnect-warning" role="alert">
 			<span>
-				@if (service.status()?.last_fetch_error_code; as errorCode) {
+				@if (service.status()?.lastFetchErrorCode; as errorCode) {
 					The last fetch failed ({{ errorCode }}), so these numbers may be out of date.
 				} @else {
 					The last fetch failed, so these numbers may be out of date.
@@ -87,7 +87,7 @@
 
 				<ng-container matColumnDef="connection">
 					<th mat-header-cell *matHeaderCellDef mat-sort-header="connection" start="asc">Connection</th>
-					<td mat-cell *matCellDef="let account" class="cell-muted">{{ account.connection_name }}</td>
+					<td mat-cell *matCellDef="let account" class="cell-muted">{{ account.connectionName }}</td>
 				</ng-container>
 
 				<ng-container matColumnDef="balance">
@@ -99,7 +99,7 @@
 					<th mat-header-cell *matHeaderCellDef>Counts as cash</th>
 					<td mat-cell *matCellDef="let account">
 						<mat-slide-toggle
-							[checked]="account.include_in_cash"
+							[checked]="account.includeInCash"
 							[disabled]="service.savingCash() || service.busy()"
 							(change)="onCashToggle(account, $event.checked)"
 							[attr.aria-label]="'Count ' + account.name + ' in the cash total'"

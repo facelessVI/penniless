@@ -33,8 +33,8 @@
 				<mat-label>Account</mat-label>
 				<mat-select [value]="service.accountId()" (selectionChange)="onAccountChange($event)">
 					<mat-option [value]="null">All accounts</mat-option>
-					@for (account of service.accounts(); track account.account_id) {
-						<mat-option [value]="account.account_id">{{ account.name }}</mat-option>
+					@for (account of service.accounts(); track account.accountId) {
+						<mat-option [value]="account.accountId">{{ account.name }}</mat-option>
 					}
 				</mat-select>
 			</mat-form-field>
@@ -57,12 +57,12 @@
 		<table mat-table [dataSource]="service.rows()" class="transactions-table">
 			<ng-container matColumnDef="date">
 				<th mat-header-cell *matHeaderCellDef>Date</th>
-				<td mat-cell *matCellDef="let row" class="cell-date">{{ row.posted_date }}</td>
+				<td mat-cell *matCellDef="let row" class="cell-date">{{ row.postedDate }}</td>
 			</ng-container>
 
 			<ng-container matColumnDef="account">
 				<th mat-header-cell *matHeaderCellDef>Account</th>
-				<td mat-cell *matCellDef="let row" class="cell-muted">{{ row.account_name }}</td>
+				<td mat-cell *matCellDef="let row" class="cell-muted">{{ row.accountName }}</td>
 			</ng-container>
 
 			<ng-container matColumnDef="description">
@@ -84,8 +84,8 @@
 					*matCellDef="let row"
 					class="money"
 					[class.cell-transfer]="row.isTransfer"
-					[class.amount-in]="row.amount_cents > 0"
-					[class.amount-out]="row.amount_cents < 0"
+					[class.amount-in]="row.amountCents > 0"
+					[class.amount-out]="row.amountCents < 0"
 				>
 					{{ row.amountLabel }}
 				</td>

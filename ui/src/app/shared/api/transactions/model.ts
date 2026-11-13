@@ -3,14 +3,14 @@ export type TransactionMatchType = "exact" | "contains";
 export type TransactionKeywordSource = "description" | "rule" | "token" | "phrase";
 
 export interface TransactionItem {
-	connection_id: string;
-	account_id: string;
-	account_name: string;
-	transaction_id: string;
-	posted_date: string;
+	connectionId: string;
+	accountId: string;
+	accountName: string;
+	transactionId: string;
+	postedDate: string;
 	description: string;
 	category: string;
-	amount_cents: number;
+	amountCents: number;
 }
 
 export interface TransactionListResponse {
@@ -21,32 +21,32 @@ export interface TransactionListResponse {
 }
 
 export interface TransactionCategoryContract {
-	connection_id: string;
-	account_id: string;
-	transaction_id: string;
-	match_type: TransactionMatchType;
+	connectionId: string;
+	accountId: string;
+	transactionId: string;
+	matchType: TransactionMatchType;
 	pattern: string;
 	category: string;
 }
 
 export interface TransactionCategoryResponse {
 	description: string;
-	match_type: TransactionMatchType;
+	matchType: TransactionMatchType;
 	pattern: string;
 	category: string;
 	matched: number;
 	updated: number;
-	rule_deleted: boolean;
+	ruleDeleted: boolean;
 }
 
 export interface TransactionKeywordRule {
-	match_type: TransactionMatchType;
+	matchType: TransactionMatchType;
 	pattern: string;
 	category: string;
 }
 
 export interface TransactionKeywordOption {
-	match_type: TransactionMatchType;
+	matchType: TransactionMatchType;
 	pattern: string;
 	category: string | null;
 	source: TransactionKeywordSource;
@@ -55,7 +55,7 @@ export interface TransactionKeywordOption {
 
 export interface TransactionKeywordResponse {
 	description: string;
-	effective_rule: TransactionKeywordRule | null;
+	effectiveRule: TransactionKeywordRule | null;
 	options: TransactionKeywordOption[];
 }
 

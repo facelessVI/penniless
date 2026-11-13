@@ -28,10 +28,10 @@ export type DashboardSortColumn = "connection" | "balance";
 export type DashboardSortDirection = "asc" | "desc";
 
 const compareConnections = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
-	first.connection_name.localeCompare(second.connection_name) || first.name.localeCompare(second.name);
+	first.connectionName.localeCompare(second.connectionName) || first.name.localeCompare(second.name);
 
 const compareBalances = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
-	first.balance_cents - second.balance_cents || compareConnections(first, second);
+	first.balanceCents - second.balanceCents || compareConnections(first, second);
 
 const SORT_COMPARATORS: Record<DashboardSortColumn, (first: DashboardAccountRow, second: DashboardAccountRow) => number> = {
 	connection: compareConnections,
@@ -77,7 +77,7 @@ export class DashboardPageService {
 	readonly accountRows = computed<DashboardAccountRow[]>(() => {
 		const rows = this.accounts().map((account) => ({
 			...account,
-			balanceLabel: formatCents(account.balance_cents, account.currency),
+			balanceLabel: formatCents(account.balanceCents, account.currency),
 		}));
 		const column = this.sortColumn();
 		const direction = this.sortDirection();
@@ -100,18 +100,18 @@ export class DashboardPageService {
 		}
 
 		return {
-			totalIn: formatCents(summary.total_in_cents),
-			totalOut: formatCents(summary.total_out_cents),
-			net: formatSignedCents(summary.net_cents),
-			cash: formatCents(summary.cash_total_cents),
-			netWorth: formatCents(summary.net_worth_cents),
-			transactionCount: summary.transaction_count,
+			totalIn: formatCents(summary.totalInCents),
+			totalOut: formatCents(summary.totalOutCents),
+			net: formatSignedCents(summary.netCents),
+			cash: formatCents(summary.cashTotalCents),
+			netWorth: formatCents(summary.netWorthCents),
+			transactionCount: summary.transactionCount,
 			periodLabel: this.formatPeriod(summary.start, summary.end),
 		};
 	});
 
 	readonly hasAccounts = computed(() => this.accounts().length > 0);
-	readonly fetchFailed = computed(() => this.status()?.last_fetch_status === "error");
+	readonly fetchFailed = computed(() => this.status()?.lastFetchStatus === "error");
 
 	load(): void {
 		this.loading.set(true);
@@ -156,9 +156,9 @@ export class DashboardPageService {
 	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
 		this.savingCash.set(true);
 
-		this.apiClient.accounts.standard.updateIncludeInCash(account.connection_id, account.account_id, { include_in_cash: includeInCash }).subscribe({
+		this.apiClient.accounts.standard.updateIncludeInCash(account.connectionId, account.accountId, { includeInCash }).subscribe({
 			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (candidate.account_id === updated.account_id ? updated : candidate)));
+				this.accounts.update((accounts) => accounts.map((candidate) => (candidate.accountId === updated.accountId ? updated : candidate)));
 				this.savingCash.set(false);
 				this.refreshSummary();
 			},
