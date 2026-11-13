@@ -29,15 +29,15 @@ def get_health() -> HealthResponse:
 @router.get("/status", response_model=StatusResponse)
 def get_status(connection: Annotated[sqlite3.Connection, Depends(db.get_connection)]) -> StatusResponse:
     stored_credentials = credentials.read_credentials()
-    last_fetch = ingest.last_fetch(connection)
+    last_fetch = ingest.get_last_fetch(connection)
     guard = ingest.refresh_guard(connection)
 
     return StatusResponse(
         connected=stored_credentials is not None,
         source=settings.source,
         credential_claimed_at=stored_credentials.claimed_at if stored_credentials is not None else None,
-        account_count=ingest.count_rows(connection, "accounts"),
-        transaction_count=ingest.count_rows(connection, "transactions"),
+        account_count=ingest.count_accounts(connection),
+        transaction_count=ingest.count_transactions(connection),
         last_fetch_status=last_fetch.status if last_fetch is not None else None,
         last_fetched_at=last_fetch.fetched_at if last_fetch is not None else None,
         last_fetch_error_code=last_fetch.error_code if last_fetch is not None else None,
@@ -61,7 +61,7 @@ def post_connect(
 
     return ConnectResponse(
         connected=True,
-        account_count=ingest.count_rows(connection, "accounts"),
+        account_count=ingest.count_accounts(connection),
         backfill_windows=len(backfill.windows),
         transactions_stored=backfill.transactions_stored,
     )
@@ -97,7 +97,7 @@ def post_refresh(
 
     return RefreshResponse(
         fetched=True,
-        account_count=ingest.count_rows(connection, "accounts"),
+        account_count=ingest.count_accounts(connection),
         transactions_stored=result.transactions_stored,
         fetched_at=result.fetched_at,
         refresh_allowed=next_guard.allowed,

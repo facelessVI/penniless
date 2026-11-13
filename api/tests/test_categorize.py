@@ -121,7 +121,7 @@ def rule_count(connection: sqlite3.Connection) -> int:
 
 def test_seeded_categories_keep_their_declared_order() -> None:
     """The migration seeds the names and nothing else: a fresh database has no rules at all."""
-    rules = service.load_rules(make_connection())
+    rules = service.get_category_rules(make_connection())
 
     assert rules.categories == DECLARED_CATEGORIES
     assert rules.rules == ()
@@ -131,7 +131,7 @@ def test_an_exact_rule_matches_the_whole_description_only() -> None:
     """`exact` stays case-sensitive: a merchant suffix or a different case is a different merchant."""
     connection = make_connection()
     seed_rule(connection, "SPOTIFY USA", "Subscriptions")
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("SPOTIFY USA") == "Subscriptions"
     assert rules.classify("SPOTIFY USA 877-7781161 NY") == constants.UNCATEGORIZED_CATEGORY
@@ -142,7 +142,7 @@ def test_an_exact_rule_matches_the_whole_description_only() -> None:
 def test_a_contains_rule_matches_a_case_insensitive_substring() -> None:
     connection = make_connection()
     seed_rule(connection, "spotify usa", "Subscriptions", match_type=constants.MATCH_TYPE_CONTAINS)
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("SPOTIFY USA") == "Subscriptions"
     assert rules.classify("SPOTIFY USA 877-7781161 NY") == "Subscriptions"
@@ -156,7 +156,7 @@ def test_a_contains_rule_treats_wildcard_characters_as_literal_text() -> None:
     connection = make_connection()
     seed_rule(connection, "A_C", "Groceries", match_type=constants.MATCH_TYPE_CONTAINS)
     seed_rule(connection, "50% OFF", "Shopping", match_type=constants.MATCH_TYPE_CONTAINS)
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("PURCHASE A_C 001") == "Groceries"
     assert rules.classify("ABC") == constants.UNCATEGORIZED_CATEGORY
@@ -169,7 +169,7 @@ def test_an_exact_rule_beats_a_contains_rule_for_the_same_text() -> None:
     connection = make_connection()
     seed_rule(connection, "AMAZON", "Shopping", match_type=constants.MATCH_TYPE_CONTAINS)
     seed_rule(connection, "AMAZON", "Dining")
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("AMAZON") == "Dining"
     assert rules.classify("AMAZON MKTPLACE PMTS") == "Shopping"
@@ -179,7 +179,7 @@ def test_a_longer_contains_pattern_wins() -> None:
     connection = make_connection()
     seed_rule(connection, "AMAZON", "Shopping", match_type=constants.MATCH_TYPE_CONTAINS)
     seed_rule(connection, "AMAZON PRIME", "Subscriptions", match_type=constants.MATCH_TYPE_CONTAINS)
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("AMAZON PRIME*2X") == "Subscriptions"
     assert rules.classify("AMAZON MKTPLACE PMTS") == "Shopping"
@@ -201,7 +201,7 @@ def test_equally_long_contains_patterns_resolve_to_the_newest_rule() -> None:
         match_type=constants.MATCH_TYPE_CONTAINS,
         updated_at="2026-11-02T00:00:00+00:00",
     )
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("SHOP A SHOP B") == "Dining"
 
@@ -212,28 +212,28 @@ def test_equally_specific_rules_fall_back_to_alphabetical_order() -> None:
     timestamp = "2026-11-01T00:00:00+00:00"
     seed_rule(connection, "BB", "Shopping", match_type=constants.MATCH_TYPE_CONTAINS, updated_at=timestamp)
     seed_rule(connection, "AA", "Dining", match_type=constants.MATCH_TYPE_CONTAINS, updated_at=timestamp)
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
 
     assert rules.classify("AA BB") == "Dining"
 
 
-def test_load_rules_rejects_an_empty_category_list() -> None:
+def test_get_category_rules_rejects_an_empty_category_list() -> None:
     connection = make_connection()
     connection.execute("DELETE FROM categories")
 
     with pytest.raises(errors.CategoryRulesError, match="empty"):
-        service.load_rules(connection)
+        service.get_category_rules(connection)
 
 
-def test_load_rules_rejects_a_missing_uncategorized_bucket() -> None:
+def test_get_category_rules_rejects_a_missing_uncategorized_bucket() -> None:
     connection = make_connection()
     connection.execute("DELETE FROM categories WHERE name = 'Uncategorized'")
 
     with pytest.raises(errors.CategoryRulesError, match="Uncategorized"):
-        service.load_rules(connection)
+        service.get_category_rules(connection)
 
 
-def test_load_rules_rejects_a_rule_for_an_undeclared_category() -> None:
+def test_get_category_rules_rejects_a_rule_for_an_undeclared_category() -> None:
     """Reachable only by hand-editing the database with foreign keys off, which is what validation is for."""
     connection = make_connection()
     seed_rule(connection, "SPOTIFY USA", "Subscriptions")
@@ -241,10 +241,10 @@ def test_load_rules_rejects_a_rule_for_an_undeclared_category() -> None:
     connection.execute("UPDATE rules SET category = 'Nonsense'")
 
     with pytest.raises(errors.CategoryRulesError, match="undeclared category"):
-        service.load_rules(connection)
+        service.get_category_rules(connection)
 
 
-def test_load_rules_rejects_an_unknown_match_type() -> None:
+def test_get_category_rules_rejects_an_unknown_match_type() -> None:
     """The CHECK constraint is the first line; validation also has to refuse a hand-edited row."""
     connection = make_connection()
     seed_rule(connection, "SPOTIFY USA", "Subscriptions")
@@ -252,15 +252,15 @@ def test_load_rules_rejects_an_unknown_match_type() -> None:
     connection.execute("UPDATE rules SET match_type = 'regex'")
 
     with pytest.raises(errors.CategoryRulesError, match="match type"):
-        service.load_rules(connection)
+        service.get_category_rules(connection)
 
 
-def test_load_rules_rejects_a_blank_pattern() -> None:
+def test_get_category_rules_rejects_a_blank_pattern() -> None:
     connection = make_connection()
     seed_rule(connection, "   ", "Subscriptions")
 
     with pytest.raises(errors.CategoryRulesError, match="empty pattern"):
-        service.load_rules(connection)
+        service.get_category_rules(connection)
 
 
 def test_a_rule_is_unique_per_match_type_case_insensitively() -> None:
@@ -284,14 +284,14 @@ def test_apply_rules_relabels_every_stored_row_and_is_idempotent() -> None:
     seed_transaction(connection, "TX-3", "SPOTIFY USA")
     seed_rule(connection, "SPOTIFY USA", "Subscriptions")
 
-    result = service.apply_rules(connection, service.load_rules(connection))
+    result = service.apply_rules(connection, service.get_category_rules(connection))
 
     assert result.updated == 2
     assert result.uncategorized == 1
     assert stored_category(connection, "TX-1") == "Subscriptions"
     assert stored_category(connection, "TX-3") == "Subscriptions"
     assert stored_category(connection, "TX-2") == constants.UNCATEGORIZED_CATEGORY
-    assert service.apply_rules(connection, service.load_rules(connection)).updated == 0
+    assert service.apply_rules(connection, service.get_category_rules(connection)).updated == 0
 
 
 def test_apply_rules_uses_the_most_specific_rule_per_row() -> None:
@@ -302,7 +302,7 @@ def test_apply_rules_uses_the_most_specific_rule_per_row() -> None:
     seed_rule(connection, "AMAZON", "Shopping", match_type=constants.MATCH_TYPE_CONTAINS)
     seed_rule(connection, "AMAZON PRIME", "Subscriptions", match_type=constants.MATCH_TYPE_CONTAINS)
 
-    service.apply_rules(connection, service.load_rules(connection))
+    service.apply_rules(connection, service.get_category_rules(connection))
 
     assert stored_category(connection, "TX-1") == "Shopping"
     assert stored_category(connection, "TX-2") == "Subscriptions"
@@ -313,7 +313,7 @@ def test_apply_rules_demotes_rows_whose_rule_is_gone() -> None:
     seed_account(connection)
     seed_transaction(connection, "TX-1", "SPOTIFY USA", "Subscriptions")
 
-    result = service.apply_rules(connection, service.load_rules(connection))
+    result = service.apply_rules(connection, service.get_category_rules(connection))
 
     assert result.updated == 1
     assert stored_category(connection, "TX-1") == constants.UNCATEGORIZED_CATEGORY
@@ -323,7 +323,7 @@ def test_a_learned_rule_survives_an_ingest_upsert() -> None:
     """The whole point of rules as data: a re-upsert must not undo a learned category."""
     connection = make_connection()
     seed_rule(connection, "STUB PURCHASE", "Dining")
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
     account = SimpleFinAccount.model_validate(
         {
             "id": "ACT-1",
@@ -341,7 +341,7 @@ def test_a_learned_rule_survives_an_ingest_upsert() -> None:
     ingest.upsert_account(connection, account, "CON-1", "Stub Bank", db.now_iso(), rules)
     ingest.upsert_account(connection, account, "CON-1", "Stub Bank", db.now_iso(), rules)
 
-    assert ingest.count_rows(connection, "transactions") == 1
+    assert ingest.count_transactions(connection) == 1
     assert stored_category(connection, "TX-1") == "Dining"
 
 
@@ -349,7 +349,7 @@ def test_a_keyword_rule_classifies_a_transaction_it_has_never_seen() -> None:
     """Ingest classifies at write time, so a new description that contains the keyword arrives set."""
     connection = make_connection()
     seed_rule(connection, "STUB", "Dining", match_type=constants.MATCH_TYPE_CONTAINS)
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
     account = SimpleFinAccount.model_validate(
         {
             "id": "ACT-1",
@@ -471,9 +471,11 @@ def test_migration_004_turns_every_rule_into_an_exact_rule() -> None:
     assert foreign_keys == {("categories", "CASCADE", "RESTRICT")}
 
     # AC3: behaviour after the migration is exactly what it was before it.
-    assert service.load_rules(connection).classify("SPOTIFY USA") == "Subscriptions"
-    assert service.load_rules(connection).classify("SPOTIFY USA 877-7781161 NY") == (constants.UNCATEGORIZED_CATEGORY)
-    assert service.apply_rules(connection, service.load_rules(connection)).updated == 0
+    assert service.get_category_rules(connection).classify("SPOTIFY USA") == "Subscriptions"
+    assert service.get_category_rules(connection).classify("SPOTIFY USA 877-7781161 NY") == (
+        constants.UNCATEGORIZED_CATEGORY
+    )
+    assert service.apply_rules(connection, service.get_category_rules(connection)).updated == 0
 
 
 def test_migration_004_keeps_one_of_two_rules_that_differ_only_in_case() -> None:
@@ -1017,7 +1019,7 @@ def test_delete_category_moves_transactions_and_drops_its_rules() -> None:
     assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
     # Nothing needs reclassifying afterwards: the reassignment already matches the rules that are left.
-    assert service.apply_rules(connection, service.load_rules(connection)).updated == 0
+    assert service.apply_rules(connection, service.get_category_rules(connection)).updated == 0
 
 
 def test_delete_category_reports_zero_when_nothing_uses_it() -> None:

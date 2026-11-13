@@ -21,7 +21,7 @@ router = APIRouter(tags=["categories"])
 def list_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    service.load_rules(connection)
+    service.get_category_rules(connection)
 
     return converters.to_categories(service.list_categories(connection))
 
@@ -62,7 +62,7 @@ def delete_category(
 def apply_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> ApplyCategoriesResponse:
-    rules = service.load_rules(connection)
+    rules = service.get_category_rules(connection)
     result = service.apply_rules(connection, rules)
 
     return converters.to_apply_result(result)

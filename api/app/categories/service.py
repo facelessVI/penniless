@@ -58,7 +58,7 @@ from app.categories.models import (
 )
 
 
-def load_rules(connection: sqlite3.Connection) -> CategoryRules:
+def get_category_rules(connection: sqlite3.Connection) -> CategoryRules:
     """Read and validate the category data. A broken row must fail before it can cost a fetch."""
     categories = tuple(persistence.get_category_names(connection))
 
@@ -108,7 +108,7 @@ def assign_category(
     never widen a rule to a description it was never shown. The whole rule set is then re-applied, so
     precedence resolves any overlap rather than the write order deciding it.
     """
-    rules = load_rules(connection)
+    rules = get_category_rules(connection)
 
     if category not in rules.categories:
         raise CategoryRulesError(
@@ -160,7 +160,7 @@ def assign_category(
                 persistence.update_rule_category(connection, match_type, pattern, category, updated_at)
                 stored_pattern = str(existing["pattern"])
 
-    applied = apply_rules(connection, load_rules(connection))
+    applied = apply_rules(connection, get_category_rules(connection))
 
     return AssignResult(
         description=description,
@@ -190,7 +190,7 @@ def list_keyword_options(
             f"Unknown transaction {transaction_id} on connection {connection_id}, account {account_id}."
         )
 
-    rules = load_rules(connection)
+    rules = get_category_rules(connection)
     effective_rule = next((rule for rule in rules.rules if rule.matches(description)), None)
     descriptions = persistence.get_all_descriptions(connection)
 

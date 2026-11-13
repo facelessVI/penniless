@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from app.categories.matching import CategoryRules
-from app.categories.service import load_rules
+from app.categories.service import get_category_rules
 from app.config import settings
 from app.db import now_iso
 from app.errors import SimpleFinError, sanitize_message
@@ -90,6 +90,9 @@ INSERT INTO data_fetches (
     connection_id, window_start, window_end, fetched_at, status, transaction_count, error_code, error_message
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """
+
+COUNT_ACCOUNTS_SQL = "SELECT count(*) AS total FROM accounts"
+COUNT_TRANSACTIONS_SQL = "SELECT count(*) AS total FROM transactions"
 
 
 @dataclass(frozen=True)
@@ -218,13 +221,15 @@ def is_storable(transaction_posted: int | None, pending: bool) -> bool:
     return not pending and transaction_posted is not None and transaction_posted > 0
 
 
-def count_rows(connection: sqlite3.Connection, table: str) -> int:
-    row = connection.execute(f"SELECT count(*) AS total FROM {table}").fetchone()
-
-    return int(row["total"])
+def count_accounts(connection: sqlite3.Connection) -> int:
+    return int(connection.execute(COUNT_ACCOUNTS_SQL).fetchone()["total"])
 
 
-def last_fetch(connection: sqlite3.Connection) -> FetchRecord | None:
+def count_transactions(connection: sqlite3.Connection) -> int:
+    return int(connection.execute(COUNT_TRANSACTIONS_SQL).fetchone()["total"])
+
+
+def get_last_fetch(connection: sqlite3.Connection) -> FetchRecord | None:
     row = connection.execute(
         "SELECT fetched_at, status, error_code FROM data_fetches ORDER BY id DESC LIMIT 1"
     ).fetchone()
@@ -255,7 +260,7 @@ def ingest_window(
     connection: sqlite3.Connection, source: AccountSource, access_url: str, window: FetchWindow
 ) -> IngestResult:
     # Validate the categories first: broken category data must not cost a fetch.
-    rules = load_rules(connection)
+    rules = get_category_rules(connection)
     fetched_at = now_iso()
 
     try:
@@ -304,7 +309,7 @@ def ingest_window(
         window=window,
         fetched_at=fetched_at,
         transaction_count=transaction_count,
-        transactions_stored=count_rows(connection, "transactions"),
+        transactions_stored=count_transactions(connection),
     )
 
 
@@ -420,7 +425,7 @@ def run_backfill(
     for window in windows:
         ingest_window(connection, source, access_url, window)
 
-    return BackfillResult(windows=windows, transactions_stored=count_rows(connection, "transactions"))
+    return BackfillResult(windows=windows, transactions_stored=count_transactions(connection))
 
 
 def run_refresh(connection: sqlite3.Connection, source: AccountSource, access_url: str) -> IngestResult:

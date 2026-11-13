@@ -91,8 +91,8 @@ def test_gen_api_advisory_records_a_successful_fetch() -> None:
     assert row["error_code"] == "gen.api"
     assert row["transaction_count"] == 1
     assert "45 days" in row["error_message"]
-    assert ingest.count_rows(connection, "accounts") == 1
-    assert ingest.count_rows(connection, "transactions") == 1
+    assert ingest.count_accounts(connection) == 1
+    assert ingest.count_transactions(connection) == 1
     assert guard_after(connection, result.fetched_at, minutes=1).allowed is False
 
 

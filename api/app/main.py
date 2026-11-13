@@ -35,7 +35,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
         # Category data is validated after migrations and before the first fetch: broken rules must
         # fail startup rather than a fetch, because SimpleFIN calls cost quota.
-        rules = category_service.load_rules(connection)
+        rules = category_service.get_category_rules(connection)
     finally:
         connection.close()
 
