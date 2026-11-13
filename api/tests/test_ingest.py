@@ -8,7 +8,7 @@ import sqlite3
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 
-from app import db, ingest
+from app import ingest, migrations
 from app.schemas import (
     SimpleFinAccount,
     SimpleFinAccountSet,
@@ -41,7 +41,7 @@ def make_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(":memory:", check_same_thread=False)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-    db.run_migrations(connection)
+    migrations.run_migrations(connection)
 
     return connection
 

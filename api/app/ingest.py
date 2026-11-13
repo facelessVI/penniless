@@ -8,8 +8,9 @@ from typing import Any
 
 from app.categorize import CategoryRules, load_rules
 from app.config import settings
-from app.db import now_iso, parse_cents
+from app.db import now_iso
 from app.errors import SimpleFinError, sanitize_message
+from app.money import parse_cents
 from app.schemas import SimpleFinAccount, SimpleFinConnection
 from app.schemas import SimpleFinError as SimpleFinErrorEntry
 from app.simplefin import AccountSource

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from app import categorize, db, ingest
+from app import categorize, db, ingest, migrations
 from app.config import MIGRATIONS_DIR
 from app.schemas import SimpleFinAccount
 
@@ -37,20 +37,20 @@ def make_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(":memory:", check_same_thread=False)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-    db.run_migrations(connection)
+    migrations.run_migrations(connection)
 
     return connection
 
 
 def apply_migrations_up_to(connection: sqlite3.Connection, last_filename: str) -> None:
     """Stop after `last_filename`, so a test can seed the schema a migration is written against."""
-    connection.executescript(db.MIGRATIONS_TABLE_DDL)
+    connection.executescript(migrations.MIGRATIONS_TABLE_DDL)
 
     for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
         if path.name > last_filename:
             break
 
-        db.apply_migration(connection, path)
+        migrations.apply_migration(connection, path)
 
 
 def seed_account(connection: sqlite3.Connection) -> None:
@@ -372,7 +372,7 @@ def test_fixture_reset_keeps_learned_rules(tmp_path: Path) -> None:
     """The dev loop keeps what it learned, patterns and match types included."""
     database_path = tmp_path / "penniless-dev.sqlite"
     connection = db.connect(database_path)
-    db.run_migrations(connection)
+    migrations.run_migrations(connection)
     seed_rule(connection, "SPOTIFY USA", "Subscriptions")
     seed_rule(connection, "AMAZON", "Shopping", match_type=categorize.MATCH_TYPE_CONTAINS)
     connection.close()
@@ -384,12 +384,12 @@ def test_fixture_reset_keeps_learned_rules(tmp_path: Path) -> None:
         ("exact", "SPOTIFY USA", "Subscriptions"),
     ]
 
-    db.reset_database(database_path)
+    migrations.reset_database(database_path)
 
     assert not database_path.exists()
 
     connection = db.connect(database_path)
-    db.run_migrations(connection)
+    migrations.run_migrations(connection)
 
     assert db.restore_rules(connection, snapshot) == 2
     assert rule_pairs(connection) == [
@@ -420,10 +420,10 @@ def test_a_snapshot_from_a_database_without_match_type_restores_exact_rules(tmp_
 
     assert snapshot == [("exact", "SPOTIFY USA", "Subscriptions")]
 
-    db.reset_database(database_path)
+    migrations.reset_database(database_path)
 
     connection = db.connect(database_path)
-    db.run_migrations(connection)
+    migrations.run_migrations(connection)
 
     assert db.restore_rules(connection, snapshot) == 1
     assert rule_pairs(connection) == [("exact", "SPOTIFY USA", "Subscriptions")]
@@ -450,7 +450,7 @@ def test_migration_004_turns_every_rule_into_an_exact_rule() -> None:
     )
     connection.commit()
 
-    db.apply_migration(connection, MIGRATIONS_DIR / PATTERNS_MIGRATION)
+    migrations.apply_migration(connection, MIGRATIONS_DIR / PATTERNS_MIGRATION)
 
     columns = {str(row[1]) for row in connection.execute("PRAGMA table_info('rules')")}
     keys = {str(row[1]) for row in connection.execute("PRAGMA table_info('rules')") if row[5]}
@@ -495,7 +495,7 @@ def test_migration_004_keeps_one_of_two_rules_that_differ_only_in_case() -> None
     )
     connection.commit()
 
-    db.apply_migration(connection, MIGRATIONS_DIR / PATTERNS_MIGRATION)
+    migrations.apply_migration(connection, MIGRATIONS_DIR / PATTERNS_MIGRATION)
 
     assert rule_pairs(connection) == [("exact", "amazon", "Dining")]
 

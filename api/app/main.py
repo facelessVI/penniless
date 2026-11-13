@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import categorize, db, handlers
+from app import categorize, db, handlers, migrations
 from app.config import settings
 from app.routers import accounts, categories, setup, transactions
 
@@ -23,13 +23,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     preserved_rules = db.read_rules_snapshot(settings.database_path) if settings.source == "fixture" else []
 
     if settings.source == "fixture":
-        db.reset_database()
+        migrations.reset_database(settings.database_path)
         logger.info("rebuilt fixture database at %s", settings.database_path)
 
     connection = db.connect()
 
     try:
-        applied_filenames = db.run_migrations(connection)
+        applied_filenames = migrations.run_migrations(connection)
         restored_rules = db.restore_rules(connection, preserved_rules)
 
         # Category data is validated after migrations and before the first fetch: broken rules must
