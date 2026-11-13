@@ -5,12 +5,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import categorize, db
+from app import categorize, converters, db
 from app.schemas import (
     ApplyCategoriesResponse,
     CategoriesResponse,
     CategoryDeleteResponse,
-    CategoryItem,
     CategoryNameRequest,
 )
 
@@ -23,7 +22,7 @@ def list_categories(
 ) -> CategoriesResponse:
     categorize.load_rules(connection)
 
-    return to_categories_response(connection)
+    return converters.to_categories(categorize.list_categories(connection))
 
 
 @router.post("/categories", response_model=CategoriesResponse, status_code=201)
@@ -33,7 +32,7 @@ def create_category(
 ) -> CategoriesResponse:
     categorize.create_category(connection, request.name)
 
-    return to_categories_response(connection)
+    return converters.to_categories(categorize.list_categories(connection))
 
 
 @router.patch("/categories/{name}", response_model=CategoriesResponse)
@@ -44,7 +43,7 @@ def rename_category(
 ) -> CategoriesResponse:
     categorize.rename_category(connection, name, request.name)
 
-    return to_categories_response(connection)
+    return converters.to_categories(categorize.list_categories(connection))
 
 
 @router.delete("/categories/{name}", response_model=CategoryDeleteResponse)
@@ -53,14 +52,9 @@ def delete_category(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoryDeleteResponse:
     result = categorize.delete_category(connection, name)
-    response = to_categories_response(connection)
+    categories = converters.to_categories(categorize.list_categories(connection))
 
-    return CategoryDeleteResponse(
-        categories=response.categories,
-        uncategorized=response.uncategorized,
-        moved_transactions=result.moved_transactions,
-        deleted_rules=result.deleted_rules,
-    )
+    return converters.to_category_delete(categories, result)
 
 
 @router.post("/categories/apply", response_model=ApplyCategoriesResponse)
@@ -70,21 +64,4 @@ def apply_categories(
     rules = categorize.load_rules(connection)
     result = categorize.apply_rules(connection, rules)
 
-    return ApplyCategoriesResponse(updated=result.updated, uncategorized=result.uncategorized)
-
-
-def to_categories_response(connection: sqlite3.Connection) -> CategoriesResponse:
-    return CategoriesResponse(
-        categories=[to_category_item(summary) for summary in categorize.list_categories(connection)],
-        uncategorized=categorize.UNCATEGORIZED_CATEGORY,
-    )
-
-
-def to_category_item(summary: categorize.CategorySummary) -> CategoryItem:
-    return CategoryItem(
-        name=summary.name,
-        position=summary.position,
-        transaction_count=summary.transaction_count,
-        rule_count=summary.rule_count,
-        protected=summary.is_protected,
-    )
+    return converters.to_apply_result(result)

@@ -12,11 +12,12 @@ from typing import cast
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app import categorize, errors
+from app import categorize, errors, ledger
 
 # Every domain error the API translates, with the status it answers with. A 400 is a
 # request the caller can fix; a 404 is a key that names nothing stored.
 DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
+    ledger.InvalidDateRangeError: 400,
     categorize.CategoryRulesError: 400,
     categorize.CategoryNameError: 400,
     categorize.ProtectedCategoryError: 400,
