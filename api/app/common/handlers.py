@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app import ledger
-from app.categories.errors import (
+from app.categories.errors.categories_errors import (
     CategoryNameError,
     CategoryRulesError,
     ProtectedCategoryError,

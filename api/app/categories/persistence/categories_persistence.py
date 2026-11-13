@@ -1,11 +1,14 @@
 """Every SQL statement about categories and rules.
 
-One function, one statement, and no decisions: a miss comes back as `None` or a row count,
-and the service decides what a miss means. The transaction boundary belongs to the service
-too, which is why nothing here opens one.
+One function, one statement, and no decisions: a miss comes back as `None`, `False` or a row
+count, and the service decides what a miss means. The transaction boundary belongs to the
+service too, which is why nothing here opens one. Reads come back as the typed classes in
+`categories_model`, never as a raw row.
 """
 
 import sqlite3
+
+from app.categories.model.categories_model import CategoryRow, ClassificationRow, Rule
 
 LOAD_CATEGORIES_SQL = "SELECT name FROM categories ORDER BY position"
 LOAD_RULES_SQL = "SELECT match_type, pattern, category, updated_at FROM rules"
@@ -63,8 +66,8 @@ def get_category_names(connection: sqlite3.Connection) -> list[str]:
     return [str(row["name"]) for row in connection.execute(LOAD_CATEGORIES_SQL)]
 
 
-def get_rule_rows(connection: sqlite3.Connection) -> list[sqlite3.Row]:
-    return connection.execute(LOAD_RULES_SQL).fetchall()
+def get_rules(connection: sqlite3.Connection) -> list[Rule]:
+    return [Rule.from_row(row) for row in connection.execute(LOAD_RULES_SQL)]
 
 
 def get_transaction_description(
@@ -79,23 +82,33 @@ def get_all_descriptions(connection: sqlite3.Connection) -> list[str]:
     return [str(row["description"]) for row in connection.execute(SELECT_ALL_DESCRIPTIONS_SQL)]
 
 
-def get_classification_rows(connection: sqlite3.Connection) -> list[sqlite3.Row]:
-    return connection.execute(SELECT_CLASSIFICATION_SQL).fetchall()
+def get_classification_rows(connection: sqlite3.Connection) -> list[ClassificationRow]:
+    return [ClassificationRow.from_row(row) for row in connection.execute(SELECT_CLASSIFICATION_SQL)]
 
 
 def set_transaction_category(
     connection: sqlite3.Connection,
-    connection_id: str,
-    account_id: str,
-    transaction_id: str,
+    classification: ClassificationRow,
     category: str,
     updated_at: str,
 ) -> None:
-    connection.execute(UPDATE_CLASSIFICATION_SQL, (category, updated_at, connection_id, account_id, transaction_id))
+    connection.execute(
+        UPDATE_CLASSIFICATION_SQL,
+        (
+            category,
+            updated_at,
+            classification.connection_id,
+            classification.account_id,
+            classification.transaction_id,
+        ),
+    )
 
 
-def get_rule(connection: sqlite3.Connection, match_type: str, pattern: str) -> sqlite3.Row | None:
-    return connection.execute(SELECT_RULE_SQL, (match_type, pattern)).fetchone()
+def get_rule(connection: sqlite3.Connection, match_type: str, pattern: str) -> str | None:
+    """The stored spelling of the pattern, or `None` when no such rule exists."""
+    row = connection.execute(SELECT_RULE_SQL, (match_type, pattern)).fetchone()
+
+    return None if row is None else str(row["pattern"])
 
 
 def insert_rule(connection: sqlite3.Connection, match_type: str, pattern: str, category: str, updated_at: str) -> None:
@@ -112,8 +125,8 @@ def delete_rule(connection: sqlite3.Connection, match_type: str, pattern: str) -
     return connection.execute(DELETE_RULE_SQL, (match_type, pattern)).rowcount
 
 
-def get_categories_with_counts(connection: sqlite3.Connection) -> list[sqlite3.Row]:
-    return connection.execute(SELECT_CATEGORIES_WITH_COUNTS_SQL).fetchall()
+def get_categories_with_counts(connection: sqlite3.Connection) -> list[CategoryRow]:
+    return [CategoryRow.from_row(row) for row in connection.execute(SELECT_CATEGORIES_WITH_COUNTS_SQL)]
 
 
 def get_category(connection: sqlite3.Connection, name: str) -> str | None:

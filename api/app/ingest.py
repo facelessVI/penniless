@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
-from app.categories.matching import CategoryRules
-from app.categories.service import get_category_rules
+from app.categories.model.categories_model import CategoryRules
+from app.categories.service.categories_service import get_category_rules
 from app.common.config import settings
 from app.common.db import now_iso
 from app.common.errors import SimpleFinError, sanitize_message

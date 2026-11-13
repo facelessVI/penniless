@@ -11,7 +11,10 @@ from pathlib import Path
 import pytest
 
 from app import ingest
-from app.categories import constants, errors, models, service
+from app.categories.constants import categories_constants as constants
+from app.categories.errors import categories_errors as errors
+from app.categories.model import categories_model as models
+from app.categories.service import categories_service as service
 from app.common import db, migrations
 from app.common.config import MIGRATIONS_DIR
 from app.common.simplefin_api import SimpleFinAccount

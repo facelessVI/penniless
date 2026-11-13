@@ -10,14 +10,14 @@ Two names are load-bearing in code rather than data, so they are protected here 
 `Transfers` is how a row is recognized as a transfer, and `Uncategorized` is the fallback bucket that
 startup validation requires.
 
-Precedence itself lives in `matching`, the SQL in `persistence`; this module decides what a miss
-means and owns every transaction boundary.
+Precedence ordering is the first thing this module does to a rule set; the matching itself lives in
+`categories_matching`, the SQL in `categories_persistence`. This module decides what a miss means and
+owns every transaction boundary.
 """
 
 import sqlite3
 
-from app.categories import persistence
-from app.categories.constants import (
+from app.categories.constants.categories_constants import (
     KEYWORD_SOURCE_DESCRIPTION,
     KEYWORD_SOURCE_PHRASE,
     KEYWORD_SOURCE_RULE,
@@ -29,7 +29,7 @@ from app.categories.constants import (
     PROTECTED_CATEGORY_REASONS,
     UNCATEGORIZED_CATEGORY,
 )
-from app.categories.errors import (
+from app.categories.errors.categories_errors import (
     CategoryNameError,
     CategoryRulesError,
     ProtectedCategoryError,
@@ -38,24 +38,37 @@ from app.categories.errors import (
     UnknownRuleError,
     UnknownTransactionError,
 )
-from app.categories.matching import (
-    CategoryRules,
-    Rule,
+from app.categories.matching.categories_matching import (
     count_matches,
     keyword_phrases,
     keyword_tokens,
     matches,
-    order_rules,
 )
-from app.categories.models import (
+from app.categories.model.categories_model import (
     ApplyResult,
     AssignResult,
     CategoryDeleteResult,
-    CategorySummary,
+    CategoryRow,
+    CategoryRules,
     KeywordOption,
     KeywordOptions,
+    Rule,
 )
+from app.categories.persistence import categories_persistence as persistence
 from app.common import db
+
+
+def order_rules(rules: list[Rule]) -> tuple[Rule, ...]:
+    """Most specific first: exact before contains, longer patterns, newest, then alphabetical.
+
+    Python's sort is stable, so each pass refines the one before it: the last sort is the primary key.
+    """
+    ordered = sorted(rules, key=lambda rule: rule.pattern)
+    ordered.sort(key=lambda rule: rule.updated_at, reverse=True)
+    ordered.sort(key=lambda rule: len(rule.pattern), reverse=True)
+    ordered.sort(key=lambda rule: 0 if rule.match_type == MATCH_TYPE_EXACT else 1)
+
+    return tuple(ordered)
 
 
 def get_category_rules(connection: sqlite3.Connection) -> CategoryRules:
@@ -70,25 +83,19 @@ def get_category_rules(connection: sqlite3.Connection) -> CategoryRules:
             f"Categories must include {UNCATEGORIZED_CATEGORY!r}, the bucket unmatched transactions land in."
         )
 
-    rules: list[Rule] = []
+    rules = persistence.get_rules(connection)
 
-    for row in persistence.get_rule_rows(connection):
-        match_type = str(row["match_type"])
-        pattern = str(row["pattern"])
-        category = str(row["category"])
-
-        if match_type not in MATCH_TYPES:
+    for rule in rules:
+        if rule.match_type not in MATCH_TYPES:
             raise CategoryRulesError(
-                f"A rule has match type {match_type!r}; the known ones are {', '.join(MATCH_TYPES)}."
+                f"A rule has match type {rule.match_type!r}; the known ones are {', '.join(MATCH_TYPES)}."
             )
 
-        if not pattern.strip():
+        if not rule.pattern.strip():
             raise CategoryRulesError("A rule has an empty pattern.")
 
-        if category not in categories:
-            raise CategoryRulesError(f"Rule for {pattern!r} references undeclared category {category!r}.")
-
-        rules.append(Rule(match_type=match_type, pattern=pattern, category=category, updated_at=str(row["updated_at"])))
+        if rule.category not in categories:
+            raise CategoryRulesError(f"Rule for {rule.pattern!r} references undeclared category {rule.category!r}.")
 
     return CategoryRules(categories=categories, rules=order_rules(rules))
 
@@ -158,7 +165,7 @@ def assign_category(
                 # An existing rule keeps its pattern's spelling and its `created_at`; only the
                 # category and the timestamp move.
                 persistence.update_rule_category(connection, match_type, pattern, category, updated_at)
-                stored_pattern = str(existing["pattern"])
+                stored_pattern = existing
 
     applied = apply_rules(connection, get_category_rules(connection))
 
@@ -252,22 +259,15 @@ def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyRe
 
     with connection:
         for row in rows:
-            category = rules.classify(row["description"])
+            category = rules.classify(row.description)
 
             if category == UNCATEGORIZED_CATEGORY:
                 uncategorized += 1
 
-            if category == row["category"]:
+            if category == row.category:
                 continue
 
-            persistence.set_transaction_category(
-                connection,
-                str(row["connection_id"]),
-                str(row["account_id"]),
-                str(row["transaction_id"]),
-                category,
-                updated_at,
-            )
+            persistence.set_transaction_category(connection, row, category, updated_at)
             updated += 1
 
     return ApplyResult(updated=updated, uncategorized=uncategorized)
@@ -291,17 +291,9 @@ def normalize_category_name(name: str) -> str:
     return normalized
 
 
-def list_categories(connection: sqlite3.Connection) -> list[CategorySummary]:
+def list_categories(connection: sqlite3.Connection) -> list[CategoryRow]:
     """Every category in display order, with how many transactions and rules currently carry it."""
-    return [
-        CategorySummary(
-            name=row["name"],
-            position=row["position"],
-            transaction_count=row["transaction_count"],
-            rule_count=row["rule_count"],
-        )
-        for row in persistence.get_categories_with_counts(connection)
-    ]
+    return persistence.get_categories_with_counts(connection)
 
 
 def create_category(connection: sqlite3.Connection, name: str) -> None:

@@ -9,16 +9,9 @@ import sqlite3
 from collections.abc import Sequence
 
 from app import ledger
-from app.categories import models
-from app.categories.constants import UNCATEGORIZED_CATEGORY
-from app.categories.matching import Rule
+from app.categories.model import categories_model as models
+from app.categories.model.categories_model import Rule
 from app.wire.accounts import AccountResponse
-from app.wire.categories import (
-    ApplyCategoriesResponse,
-    CategoriesResponse,
-    CategoryDeleteResponse,
-    CategoryItem,
-)
 from app.wire.transactions import (
     SummaryResponse,
     TransactionCategoryResponse,
@@ -121,33 +114,3 @@ def to_transaction_category(result: models.AssignResult) -> TransactionCategoryR
         updated=result.updated,
         rule_deleted=result.rule_deleted,
     )
-
-
-def to_category_item(summary: models.CategorySummary) -> CategoryItem:
-    return CategoryItem(
-        name=summary.name,
-        position=summary.position,
-        transaction_count=summary.transaction_count,
-        rule_count=summary.rule_count,
-        protected=summary.is_protected,
-    )
-
-
-def to_categories(summaries: Sequence[models.CategorySummary]) -> CategoriesResponse:
-    return CategoriesResponse(
-        categories=[to_category_item(summary) for summary in summaries],
-        uncategorized=UNCATEGORIZED_CATEGORY,
-    )
-
-
-def to_category_delete(categories: CategoriesResponse, result: models.CategoryDeleteResult) -> CategoryDeleteResponse:
-    return CategoryDeleteResponse(
-        categories=categories.categories,
-        uncategorized=categories.uncategorized,
-        moved_transactions=result.moved_transactions,
-        deleted_rules=result.deleted_rules,
-    )
-
-
-def to_apply_result(result: models.ApplyResult) -> ApplyCategoriesResponse:
-    return ApplyCategoriesResponse(updated=result.updated, uncategorized=result.uncategorized)

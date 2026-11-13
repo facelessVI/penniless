@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from app.categories.constants import TRANSFERS_CATEGORY
+from app.categories.constants.categories_constants import TRANSFERS_CATEGORY
 from app.common import db
 
 DEFAULT_PAGE_SIZE = 200

@@ -1,18 +1,16 @@
-"""How a rule decides a description, and the keywords one description could be taught by.
+"""How a pattern decides a description, and the keywords one description could be taught by.
 
-Pure functions and frozen data: nothing here touches the database, so precedence can be
-reasoned about and tested without a connection.
+Pure functions and no data classes: precedence lives with the rule model, and nothing here
+touches a connection, so the interesting cases are testable without one.
 """
 
 import string
 from collections.abc import Sequence
-from dataclasses import dataclass
 
-from app.categories.constants import (
+from app.categories.constants.categories_constants import (
     KEYWORD_NOISE_TOKENS,
     MATCH_TYPE_EXACT,
     MINIMUM_KEYWORD_TOKEN_LENGTH,
-    UNCATEGORIZED_CATEGORY,
 )
 
 
@@ -79,41 +77,3 @@ def keyword_phrases(description: str) -> list[str]:
         phrases.append(phrase)
 
     return phrases
-
-
-@dataclass(frozen=True)
-class Rule:
-    match_type: str
-    pattern: str
-    category: str
-    updated_at: str
-
-    def matches(self, description: str) -> bool:
-        return matches(self.match_type, self.pattern, description)
-
-
-@dataclass(frozen=True)
-class CategoryRules:
-    categories: tuple[str, ...]
-    rules: tuple[Rule, ...]
-
-    def classify(self, description: str) -> str:
-        """The category of the first (most specific) matching rule, or the unmatched bucket."""
-        for rule in self.rules:
-            if rule.matches(description):
-                return rule.category
-
-        return UNCATEGORIZED_CATEGORY
-
-
-def order_rules(rules: list[Rule]) -> tuple[Rule, ...]:
-    """Most specific first: exact before contains, longer patterns, newest, then alphabetical.
-
-    Python's sort is stable, so each pass refines the one before it: the last sort is the primary key.
-    """
-    ordered = sorted(rules, key=lambda rule: rule.pattern)
-    ordered.sort(key=lambda rule: rule.updated_at, reverse=True)
-    ordered.sort(key=lambda rule: len(rule.pattern), reverse=True)
-    ordered.sort(key=lambda rule: 0 if rule.match_type == MATCH_TYPE_EXACT else 1)
-
-    return tuple(ordered)

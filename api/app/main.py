@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.categories import service as category_service
+from app.categories.router import categories_router
+from app.categories.service import categories_service
 from app.common import db, handlers, migrations
 from app.common.config import settings
-from app.routers import accounts, categories, setup, transactions
+from app.routers import accounts, setup, transactions
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
@@ -35,7 +36,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
         # Category data is validated after migrations and before the first fetch: broken rules must
         # fail startup rather than a fetch, because SimpleFIN calls cost quota.
-        rules = category_service.get_category_rules(connection)
+        rules = categories_service.get_category_rules(connection)
     finally:
         connection.close()
 
@@ -60,4 +61,4 @@ handlers.register_exception_handlers(app)
 app.include_router(setup.router, prefix="/api")
 app.include_router(accounts.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
-app.include_router(categories.router, prefix="/api")
+app.include_router(categories_router.router, prefix="/api")

@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app import converters, ledger
-from app.categories import service
+from app.categories.service import categories_service as service
 from app.common import db
 from app.wire.transactions import (
     SummaryResponse,
