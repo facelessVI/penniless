@@ -19,7 +19,7 @@ export class CategoriesPageService {
 			},
 			error: () => {
 				this.loading.set(false);
-            },
+			},
 		});
 	}
 
