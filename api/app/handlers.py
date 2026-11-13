@@ -12,19 +12,28 @@ from typing import cast
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app import categorize, errors, ledger
+from app import errors, ledger
+from app.categories.errors import (
+    CategoryNameError,
+    CategoryRulesError,
+    ProtectedCategoryError,
+    RulePatternError,
+    UnknownCategoryError,
+    UnknownRuleError,
+    UnknownTransactionError,
+)
 
 # Every domain error the API translates, with the status it answers with. A 400 is a
 # request the caller can fix; a 404 is a key that names nothing stored.
 DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     ledger.InvalidDateRangeError: 400,
-    categorize.CategoryRulesError: 400,
-    categorize.CategoryNameError: 400,
-    categorize.ProtectedCategoryError: 400,
-    categorize.RulePatternError: 400,
-    categorize.UnknownRuleError: 400,
-    categorize.UnknownCategoryError: 404,
-    categorize.UnknownTransactionError: 404,
+    CategoryRulesError: 400,
+    CategoryNameError: 400,
+    ProtectedCategoryError: 400,
+    RulePatternError: 400,
+    UnknownRuleError: 400,
+    UnknownCategoryError: 404,
+    UnknownTransactionError: 404,
 }
 
 

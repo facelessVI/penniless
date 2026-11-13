@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
-from app.categorize import CategoryRules, load_rules
+from app.categories.matching import CategoryRules
+from app.categories.service import load_rules
 from app.config import settings
 from app.db import now_iso
 from app.errors import SimpleFinError, sanitize_message

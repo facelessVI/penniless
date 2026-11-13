@@ -6,7 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import categorize, db, handlers, migrations
+from app import db, handlers, migrations
+from app.categories import service as category_service
 from app.config import settings
 from app.routers import accounts, categories, setup, transactions
 
@@ -34,7 +35,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
         # Category data is validated after migrations and before the first fetch: broken rules must
         # fail startup rather than a fetch, because SimpleFIN calls cost quota.
-        rules = categorize.load_rules(connection)
+        rules = category_service.load_rules(connection)
     finally:
         connection.close()
 

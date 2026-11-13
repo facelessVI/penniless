@@ -5,7 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import categorize, converters, db
+from app import converters, db
+from app.categories import service
 from app.schemas import (
     ApplyCategoriesResponse,
     CategoriesResponse,
@@ -20,9 +21,9 @@ router = APIRouter(tags=["categories"])
 def list_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    categorize.load_rules(connection)
+    service.load_rules(connection)
 
-    return converters.to_categories(categorize.list_categories(connection))
+    return converters.to_categories(service.list_categories(connection))
 
 
 @router.post("/categories", response_model=CategoriesResponse, status_code=201)
@@ -30,9 +31,9 @@ def create_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    categorize.create_category(connection, request.name)
+    service.create_category(connection, request.name)
 
-    return converters.to_categories(categorize.list_categories(connection))
+    return converters.to_categories(service.list_categories(connection))
 
 
 @router.patch("/categories/{name}", response_model=CategoriesResponse)
@@ -41,9 +42,9 @@ def rename_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    categorize.rename_category(connection, name, request.name)
+    service.rename_category(connection, name, request.name)
 
-    return converters.to_categories(categorize.list_categories(connection))
+    return converters.to_categories(service.list_categories(connection))
 
 
 @router.delete("/categories/{name}", response_model=CategoryDeleteResponse)
@@ -51,8 +52,8 @@ def delete_category(
     name: str,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoryDeleteResponse:
-    result = categorize.delete_category(connection, name)
-    categories = converters.to_categories(categorize.list_categories(connection))
+    result = service.delete_category(connection, name)
+    categories = converters.to_categories(service.list_categories(connection))
 
     return converters.to_category_delete(categories, result)
 
@@ -61,7 +62,7 @@ def delete_category(
 def apply_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> ApplyCategoriesResponse:
-    rules = categorize.load_rules(connection)
-    result = categorize.apply_rules(connection, rules)
+    rules = service.load_rules(connection)
+    result = service.apply_rules(connection, rules)
 
     return converters.to_apply_result(result)

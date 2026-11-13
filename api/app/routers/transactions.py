@@ -6,7 +6,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app import categorize, converters, db, ledger
+from app import converters, db, ledger
+from app.categories import service
 from app.schemas import (
     SummaryResponse,
     TransactionCategoryRequest,
@@ -61,7 +62,7 @@ def list_transaction_keywords(
     account_id: Annotated[str, Query(description="The transaction's account")],
     transaction_id: Annotated[str, Query(description="The transaction's id")],
 ) -> TransactionKeywordResponse:
-    options = categorize.list_keyword_options(connection, connection_id, account_id, transaction_id)
+    options = service.list_keyword_options(connection, connection_id, account_id, transaction_id)
 
     return converters.to_keyword_response(options)
 
@@ -71,7 +72,7 @@ def assign_transaction_category(
     request: TransactionCategoryRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> TransactionCategoryResponse:
-    result = categorize.assign_category(
+    result = service.assign_category(
         connection,
         request.connection_id,
         request.account_id,

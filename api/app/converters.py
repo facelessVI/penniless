@@ -2,13 +2,16 @@
 
 No I/O and no formatting decisions: every field is spelled out, so a renamed column or a
 dropped field fails here rather than reaching the client. Anything that needs a database
-call belongs in `ledger`, `categorize` or `ingest`.
+call belongs in `ledger`, `categories` or `ingest`.
 """
 
 import sqlite3
 from collections.abc import Sequence
 
-from app import categorize, ledger
+from app import ledger
+from app.categories import models
+from app.categories.constants import UNCATEGORIZED_CATEGORY
+from app.categories.matching import Rule
 from app.schemas import (
     AccountResponse,
     ApplyCategoriesResponse,
@@ -78,7 +81,7 @@ def to_transaction_list(page: ledger.TransactionPage, limit: int, offset: int) -
     )
 
 
-def to_keyword_rule(rule: categorize.Rule) -> TransactionKeywordRule:
+def to_keyword_rule(rule: Rule) -> TransactionKeywordRule:
     return TransactionKeywordRule(
         match_type=rule.match_type,
         pattern=rule.pattern,
@@ -86,7 +89,7 @@ def to_keyword_rule(rule: categorize.Rule) -> TransactionKeywordRule:
     )
 
 
-def to_keyword_option(option: categorize.KeywordOption) -> TransactionKeywordOption:
+def to_keyword_option(option: models.KeywordOption) -> TransactionKeywordOption:
     return TransactionKeywordOption(
         match_type=option.match_type,
         pattern=option.pattern,
@@ -96,7 +99,7 @@ def to_keyword_option(option: categorize.KeywordOption) -> TransactionKeywordOpt
     )
 
 
-def to_keyword_response(options: categorize.KeywordOptions) -> TransactionKeywordResponse:
+def to_keyword_response(options: models.KeywordOptions) -> TransactionKeywordResponse:
     effective_rule = options.effective_rule
 
     return TransactionKeywordResponse(
@@ -106,7 +109,7 @@ def to_keyword_response(options: categorize.KeywordOptions) -> TransactionKeywor
     )
 
 
-def to_transaction_category(result: categorize.AssignResult) -> TransactionCategoryResponse:
+def to_transaction_category(result: models.AssignResult) -> TransactionCategoryResponse:
     return TransactionCategoryResponse(
         description=result.description,
         match_type=result.match_type,
@@ -118,7 +121,7 @@ def to_transaction_category(result: categorize.AssignResult) -> TransactionCateg
     )
 
 
-def to_category_item(summary: categorize.CategorySummary) -> CategoryItem:
+def to_category_item(summary: models.CategorySummary) -> CategoryItem:
     return CategoryItem(
         name=summary.name,
         position=summary.position,
@@ -128,16 +131,14 @@ def to_category_item(summary: categorize.CategorySummary) -> CategoryItem:
     )
 
 
-def to_categories(summaries: Sequence[categorize.CategorySummary]) -> CategoriesResponse:
+def to_categories(summaries: Sequence[models.CategorySummary]) -> CategoriesResponse:
     return CategoriesResponse(
         categories=[to_category_item(summary) for summary in summaries],
-        uncategorized=categorize.UNCATEGORIZED_CATEGORY,
+        uncategorized=UNCATEGORIZED_CATEGORY,
     )
 
 
-def to_category_delete(
-    categories: CategoriesResponse, result: categorize.CategoryDeleteResult
-) -> CategoryDeleteResponse:
+def to_category_delete(categories: CategoriesResponse, result: models.CategoryDeleteResult) -> CategoryDeleteResponse:
     return CategoryDeleteResponse(
         categories=categories.categories,
         uncategorized=categories.uncategorized,
@@ -146,5 +147,5 @@ def to_category_delete(
     )
 
 
-def to_apply_result(result: categorize.ApplyResult) -> ApplyCategoriesResponse:
+def to_apply_result(result: models.ApplyResult) -> ApplyCategoriesResponse:
     return ApplyCategoriesResponse(updated=result.updated, uncategorized=result.uncategorized)

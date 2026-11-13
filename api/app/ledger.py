@@ -10,7 +10,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from app import categorize, db
+from app import db
+from app.categories.constants import TRANSFERS_CATEGORY
 
 DEFAULT_PAGE_SIZE = 200
 MAXIMUM_PAGE_SIZE = 200
@@ -109,7 +110,7 @@ def resolve_summary_range(start: date | None, end: date | None) -> tuple[date, d
 
 def get_summary_figures(connection: sqlite3.Connection, range_start: date, range_end: date) -> SummaryFigures:
     parameters = {
-        "transfers": categorize.TRANSFERS_CATEGORY,
+        "transfers": TRANSFERS_CATEGORY,
         "start": range_start.isoformat(),
         "end": range_end.isoformat(),
     }
@@ -155,7 +156,7 @@ def find_transaction_page(
 
     if not filters.include_transfers:
         clauses.append("t.category <> ?")
-        parameters.append(categorize.TRANSFERS_CATEGORY)
+        parameters.append(TRANSFERS_CATEGORY)
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
