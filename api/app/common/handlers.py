@@ -12,6 +12,7 @@ from typing import cast
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.accounts.errors.accounts_errors import UnknownAccountError
 from app.categories.errors.categories_errors import (
     CategoryNameError,
     CategoryRulesError,
@@ -38,6 +39,7 @@ DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     ProtectedCategoryError: 400,
     RulePatternError: 400,
     UnknownRuleError: 400,
+    UnknownAccountError: 404,
     UnknownCategoryError: 404,
     UnknownTransactionError: 404,
     AlreadyConnectedError: 409,

@@ -1,14 +1,16 @@
 """Storing one SimpleFIN account: the connection it belongs to, and its balance row.
 
 This is the account half of ingest. The transaction half lives in `transactions_service`,
-and the fetch that drives both lives in `fetches_service`.
+and the fetch that drives both lives in `fetches_service`. The account endpoints live here too,
+so a router only ever reads its request and answers with whatever this module returns.
 """
 
 import sqlite3
 from typing import Any
 
 from app.accounts.constants.accounts_constants import NON_CASH_ACCOUNT_TYPES
-from app.accounts.model.accounts_model import AccountRow
+from app.accounts.errors.accounts_errors import UnknownAccountError
+from app.accounts.model.accounts_model import Account
 from app.accounts.persistence import accounts_persistence as persistence
 from app.common.dates import local_date
 from app.common.errors import SimpleFinError
@@ -42,13 +44,31 @@ def infer_include_in_cash(extra: dict[str, Any]) -> bool:
     return not is_non_cash
 
 
+def list_accounts(connection: sqlite3.Connection) -> list[Account]:
+    """Every stored account, ordered by connection then name."""
+    return persistence.get_accounts(connection)
+
+
+def set_account_included_in_cash(
+    connection: sqlite3.Connection, connection_id: str, account_id: str, include_in_cash: bool
+) -> Account:
+    """Write the cash toggle and return the updated account; an unknown key is the caller's error."""
+    with connection:
+        account = persistence.set_account_included_in_cash(connection, connection_id, account_id, include_in_cash)
+
+    if account is None:
+        raise UnknownAccountError(f"Unknown account {account_id} on connection {connection_id}.")
+
+    return account
+
+
 def upsert_account(
     connection: sqlite3.Connection,
     account: SimpleFinAccount,
     connection_id: str,
     connection_name: str,
     fetched_at: str,
-) -> AccountRow:
+) -> Account:
     """Write the account and its balance row, and return what was stored.
 
     An account with no balance fails the fetch rather than being stored as zero: a zero would
@@ -59,7 +79,7 @@ def upsert_account(
     if balance_cents is None:
         raise SimpleFinError(f"SimpleFin account {account.id} reported no balance.")
 
-    row = AccountRow(
+    stored = Account(
         connection_id=connection_id,
         account_id=account.id,
         connection_name=connection_name,
@@ -71,7 +91,7 @@ def upsert_account(
         include_in_cash=infer_include_in_cash(account.extra),
     )
 
-    persistence.upsert_account_row(connection, row, fetched_at)
-    persistence.upsert_account_balance_row(connection, row, fetched_at)
+    persistence.upsert_account(connection, stored, fetched_at)
+    persistence.upsert_account_balance(connection, stored, fetched_at)
 
-    return row
+    return stored

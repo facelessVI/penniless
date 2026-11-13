@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class AccountRow:
+class Account:
     connection_id: str
     account_id: str
     connection_name: str
@@ -18,8 +18,8 @@ class AccountRow:
     include_in_cash: bool
 
     @staticmethod
-    def from_row(row: sqlite3.Row) -> "AccountRow":
-        return AccountRow(
+    def from_row(row: sqlite3.Row) -> "Account":
+        return Account(
             connection_id=str(row["connection_id"]),
             account_id=str(row["account_id"]),
             connection_name=str(row["connection_name"]),

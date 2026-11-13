@@ -1,12 +1,13 @@
 """Every SQL statement about accounts and their balances.
 
 One function, one statement, and no decisions: a miss comes back as `None`, and the service
-or router decides what that means. Reads come back as `AccountRow`, never as a raw row.
+decides what that means. Reads come back as `Account`, never as a raw row. The transaction
+boundary belongs to the service, which is why nothing here opens one.
 """
 
 import sqlite3
 
-from app.accounts.model.accounts_model import AccountRow
+from app.accounts.model.accounts_model import Account
 from app.common import db
 
 ACCOUNT_COLUMNS = """
@@ -54,25 +55,24 @@ ON CONFLICT (connection_id, account_id, balance_date) DO UPDATE SET
 COUNT_ACCOUNTS_SQL = "SELECT count(*) AS total FROM accounts"
 
 
-def get_accounts(connection: sqlite3.Connection) -> list[AccountRow]:
-    return [AccountRow.from_row(row) for row in connection.execute(SELECT_ACCOUNTS_SQL)]
+def get_accounts(connection: sqlite3.Connection) -> list[Account]:
+    return [Account.from_row(row) for row in connection.execute(SELECT_ACCOUNTS_SQL)]
 
 
-def get_account(connection: sqlite3.Connection, connection_id: str, account_id: str) -> AccountRow | None:
+def get_account(connection: sqlite3.Connection, connection_id: str, account_id: str) -> Account | None:
     row = connection.execute(SELECT_ACCOUNT_SQL, (connection_id, account_id)).fetchone()
 
-    return None if row is None else AccountRow.from_row(row)
+    return None if row is None else Account.from_row(row)
 
 
 def set_account_included_in_cash(
     connection: sqlite3.Connection, connection_id: str, account_id: str, include_in_cash: bool
-) -> AccountRow | None:
-    """Write the toggle and return the updated row, or `None` when no account matched."""
-    with connection:
-        cursor = connection.execute(
-            UPDATE_INCLUDE_IN_CASH_SQL,
-            (int(include_in_cash), db.now_iso(), connection_id, account_id),
-        )
+) -> Account | None:
+    """Write the toggle and return the updated account, or `None` when no account matched."""
+    cursor = connection.execute(
+        UPDATE_INCLUDE_IN_CASH_SQL,
+        (int(include_in_cash), db.now_iso(), connection_id, account_id),
+    )
 
     if cursor.rowcount == 0:
         return None
@@ -92,7 +92,7 @@ def count_accounts(connection: sqlite3.Connection) -> int:
     return int(connection.execute(COUNT_ACCOUNTS_SQL).fetchone()["total"])
 
 
-def upsert_account_row(connection: sqlite3.Connection, account: AccountRow, fetched_at: str) -> None:
+def upsert_account(connection: sqlite3.Connection, account: Account, fetched_at: str) -> None:
     connection.execute(
         UPSERT_ACCOUNT_SQL,
         (
@@ -111,7 +111,7 @@ def upsert_account_row(connection: sqlite3.Connection, account: AccountRow, fetc
     )
 
 
-def upsert_account_balance_row(connection: sqlite3.Connection, account: AccountRow, fetched_at: str) -> None:
+def upsert_account_balance(connection: sqlite3.Connection, account: Account, fetched_at: str) -> None:
     connection.execute(
         UPSERT_ACCOUNT_BALANCE_SQL,
         (
