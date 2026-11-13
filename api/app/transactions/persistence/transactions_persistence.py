@@ -1,18 +1,22 @@
-"""Read models over the ledger: the period summary and the transaction list.
+"""Every SQL statement about reading transactions through the API.
 
-The queries, the filters and the page contract live here so a router never holds SQL.
+One function, one statement, and no decisions: the filter clauses are the only thing built
+here, and the page total travels with the rows so a caller cannot report one without the
+other. Reads come back as `TransactionRow`, never as a raw row.
 """
 
 import sqlite3
-from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import date
 
 from app.accounts.persistence import accounts_persistence
 from app.categories.constants.categories_constants import TRANSFERS_CATEGORY
-
-DEFAULT_PAGE_SIZE = 200
-MAXIMUM_PAGE_SIZE = 200
+from app.transactions.constants.transactions_constants import DEFAULT_PAGE_SIZE
+from app.transactions.model.transactions_model import (
+    SummaryFigures,
+    TransactionFilters,
+    TransactionPage,
+    TransactionRow,
+)
 
 SUMMARY_SQL = """
 SELECT
@@ -36,57 +40,6 @@ TRANSACTION_FROM_SQL = """
 FROM transactions t
 JOIN accounts a ON a.connection_id = t.connection_id AND a.account_id = t.account_id
 """
-
-
-class InvalidDateRangeError(ValueError):
-    """Both dates are inclusive, so a start after the end matches nothing."""
-
-
-@dataclass(frozen=True)
-class SummaryFigures:
-    """The numbers behind the summary; the response model decides how to present them."""
-
-    start: date
-    end: date
-    total_in_cents: int
-    total_out_cents: int
-    cash_total_cents: int
-    net_worth_cents: int
-    transaction_count: int
-
-
-@dataclass(frozen=True)
-class TransactionFilters:
-    """The optional filters on the transaction list, each one narrowing the query."""
-
-    account_id: str | None = None
-    category: str | None = None
-    start: date | None = None
-    end: date | None = None
-    include_transfers: bool = False
-
-
-@dataclass(frozen=True)
-class TransactionPage:
-    """One page of rows plus the total that matches the filters, for the pager."""
-
-    rows: Sequence[sqlite3.Row]
-    total: int
-
-
-def validate_range(start: date | None, end: date | None) -> None:
-    """Both dates are inclusive, so a start after the end is a request the caller can fix."""
-    if start is not None and end is not None and start > end:
-        raise InvalidDateRangeError("start must be on or before end.")
-
-
-def resolve_summary_range(start: date | None, end: date | None) -> tuple[date, date]:
-    """Both dates are inclusive and read in machine local time; the default is the current month."""
-    validate_range(start, end)
-
-    today = date.today()
-
-    return start or today.replace(day=1), end or today
 
 
 def get_summary_figures(connection: sqlite3.Connection, range_start: date, range_end: date) -> SummaryFigures:
@@ -148,4 +101,4 @@ def find_transaction_page(
         [*parameters, limit, offset],
     ).fetchall()
 
-    return TransactionPage(rows=rows, total=int(total_row["total"]))
+    return TransactionPage(rows=[TransactionRow.from_row(row) for row in rows], total=int(total_row["total"]))

@@ -1,16 +1,16 @@
-"""Wire models built from stored rows and domain results.
+"""Transaction domain results into wire models, field by field, with no I/O.
 
-No I/O and no formatting decisions: every field is spelled out, so a renamed column or a
-dropped field fails here rather than reaching the client. Anything that needs a database
-call belongs in `ledger`, `categories` or `ingest`.
+The keyword and rule responses live here rather than with categories because the endpoints
+that return them are the transaction ones, and categories knows nothing about the wire.
 """
 
-import sqlite3
-
-from app import ledger
-from app.categories.model import categories_model as models
-from app.categories.model.categories_model import Rule
-from app.wire.transactions import (
+from app.categories.model.categories_model import (
+    AssignResult,
+    KeywordOption,
+    KeywordOptions,
+    Rule,
+)
+from app.transactions.api.transactions_api import (
     SummaryResponse,
     TransactionCategoryResponse,
     TransactionItem,
@@ -19,9 +19,10 @@ from app.wire.transactions import (
     TransactionKeywordRule,
     TransactionListResponse,
 )
+from app.transactions.model.transactions_model import SummaryFigures, TransactionPage, TransactionRow
 
 
-def to_summary(figures: ledger.SummaryFigures) -> SummaryResponse:
+def to_summary(figures: SummaryFigures) -> SummaryResponse:
     return SummaryResponse(
         start=figures.start.isoformat(),
         end=figures.end.isoformat(),
@@ -34,20 +35,20 @@ def to_summary(figures: ledger.SummaryFigures) -> SummaryResponse:
     )
 
 
-def to_transaction(row: sqlite3.Row) -> TransactionItem:
+def to_transaction(row: TransactionRow) -> TransactionItem:
     return TransactionItem(
-        connection_id=row["connection_id"],
-        account_id=row["account_id"],
-        account_name=row["account_name"],
-        transaction_id=row["transaction_id"],
-        posted_date=row["posted_date"],
-        description=row["description"],
-        category=row["category"],
-        amount_cents=row["amount_cents"],
+        connection_id=row.connection_id,
+        account_id=row.account_id,
+        account_name=row.account_name,
+        transaction_id=row.transaction_id,
+        posted_date=row.posted_date,
+        description=row.description,
+        category=row.category,
+        amount_cents=row.amount_cents,
     )
 
 
-def to_transaction_list(page: ledger.TransactionPage, limit: int, offset: int) -> TransactionListResponse:
+def to_transaction_list(page: TransactionPage, limit: int, offset: int) -> TransactionListResponse:
     return TransactionListResponse(
         items=[to_transaction(row) for row in page.rows],
         total=page.total,
@@ -64,7 +65,7 @@ def to_keyword_rule(rule: Rule) -> TransactionKeywordRule:
     )
 
 
-def to_keyword_option(option: models.KeywordOption) -> TransactionKeywordOption:
+def to_keyword_option(option: KeywordOption) -> TransactionKeywordOption:
     return TransactionKeywordOption(
         match_type=option.match_type,
         pattern=option.pattern,
@@ -74,7 +75,7 @@ def to_keyword_option(option: models.KeywordOption) -> TransactionKeywordOption:
     )
 
 
-def to_keyword_response(options: models.KeywordOptions) -> TransactionKeywordResponse:
+def to_keyword_response(options: KeywordOptions) -> TransactionKeywordResponse:
     effective_rule = options.effective_rule
 
     return TransactionKeywordResponse(
@@ -84,7 +85,7 @@ def to_keyword_response(options: models.KeywordOptions) -> TransactionKeywordRes
     )
 
 
-def to_transaction_category(result: models.AssignResult) -> TransactionCategoryResponse:
+def to_transaction_category(result: AssignResult) -> TransactionCategoryResponse:
     return TransactionCategoryResponse(
         description=result.description,
         match_type=result.match_type,

@@ -1,4 +1,4 @@
-"""Period summary and the filtered transaction list."""
+"""Period summary, the filtered transaction list, and the rules learned from a transaction."""
 
 import sqlite3
 from datetime import date
@@ -6,16 +6,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app import converters, ledger
-from app.categories.service import categories_service as service
+from app.categories.service import categories_service as category_service
 from app.common import db
-from app.wire.transactions import (
+from app.transactions.api.transactions_api import (
     SummaryResponse,
     TransactionCategoryRequest,
     TransactionCategoryResponse,
     TransactionKeywordResponse,
     TransactionListResponse,
 )
+from app.transactions.constants.transactions_constants import DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE
+from app.transactions.converter import transactions_converter as converter
+from app.transactions.model.transactions_model import TransactionFilters
+from app.transactions.service import transactions_service as service
 
 router = APIRouter(tags=["transactions"])
 
@@ -26,9 +29,7 @@ def get_summary(
     start: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
     end: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
 ) -> SummaryResponse:
-    range_start, range_end = ledger.resolve_summary_range(start, end)
-
-    return converters.to_summary(ledger.get_summary_figures(connection, range_start, range_end))
+    return converter.to_summary(service.get_summary(connection, start, end))
 
 
 @router.get("/transactions", response_model=TransactionListResponse)
@@ -39,21 +40,18 @@ def list_transactions(
     start: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
     end: Annotated[date | None, Query(description="Inclusive ISO date")] = None,
     include_transfers: Annotated[bool, Query(description="Include rows flagged as transfers")] = False,
-    limit: Annotated[int, Query(ge=1, le=ledger.MAXIMUM_PAGE_SIZE)] = ledger.DEFAULT_PAGE_SIZE,
+    limit: Annotated[int, Query(ge=1, le=MAXIMUM_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TransactionListResponse:
-    ledger.validate_range(start, end)
-
-    filters = ledger.TransactionFilters(
+    filters = TransactionFilters(
         account_id=account_id,
         category=category,
         start=start,
         end=end,
         include_transfers=include_transfers,
     )
-    page = ledger.find_transaction_page(connection, filters, limit, offset)
 
-    return converters.to_transaction_list(page, limit, offset)
+    return converter.to_transaction_list(service.find_transactions(connection, filters, limit, offset), limit, offset)
 
 
 @router.get("/transactions/keywords", response_model=TransactionKeywordResponse)
@@ -63,9 +61,9 @@ def list_transaction_keywords(
     account_id: Annotated[str, Query(description="The transaction's account")],
     transaction_id: Annotated[str, Query(description="The transaction's id")],
 ) -> TransactionKeywordResponse:
-    options = service.list_keyword_options(connection, connection_id, account_id, transaction_id)
+    options = category_service.list_keyword_options(connection, connection_id, account_id, transaction_id)
 
-    return converters.to_keyword_response(options)
+    return converter.to_keyword_response(options)
 
 
 @router.post("/transactions/category", response_model=TransactionCategoryResponse)
@@ -73,7 +71,7 @@ def assign_transaction_category(
     request: TransactionCategoryRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> TransactionCategoryResponse:
-    result = service.assign_category(
+    result = category_service.assign_category(
         connection,
         request.connection_id,
         request.account_id,
@@ -83,4 +81,4 @@ def assign_transaction_category(
         request.pattern,
     )
 
-    return converters.to_transaction_category(result)
+    return converter.to_transaction_category(result)
