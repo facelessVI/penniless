@@ -5,9 +5,11 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { ApiClientService } from "@shared/api/api-client.service";
 import { CategoryDeleteResponse, CategoryItem } from "@shared/api/categories/model";
-import { CategoryDialog, CategoryDialogData, CategoryDialogResult } from "@app/dialogs/category/category.dialog";
-import { ConfirmDialog, ConfirmDialogData } from "@app/dialogs/confirm/confirm.dialog";
+import { CategoryDialog } from "@app/dialogs/category/category.dialog";
+import { ConfirmDialog } from "@app/dialogs/confirm/confirm.dialog";
 import { CategoriesPageService } from "./categories.service";
+import { CategoryDialogData, CategoryDialogResult } from "@app/shared/interfaces/category.interface";
+import { ConfirmDialogData } from "@app/shared/interfaces/confirm.interface";
 
 const SNACKBAR_DURATION_MS = 4_000;
 
@@ -49,7 +51,7 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 			}
 
 			this.service.setCategories(result.response);
-			this.snackBar.open(`Category ${result.name} created.`, undefined, { duration: SNACKBAR_DURATION_MS });
+			this.snackBar.open(`Category ${result.name} created`, undefined, { duration: SNACKBAR_DURATION_MS });
 		});
 	}
 
@@ -64,7 +66,7 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 			}
 
 			this.service.setCategories(result.response);
-			this.snackBar.open(`Category ${category.name} renamed to ${result.name}.`, undefined, { duration: SNACKBAR_DURATION_MS });
+			this.snackBar.open(`Category ${category.name} renamed to ${result.name}`, undefined, { duration: SNACKBAR_DURATION_MS });
 		});
 	}
 
@@ -88,11 +90,11 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 					this.service.setCategories(response);
 					this.snackBar.open(this.buildDeletedMessage(category.name, response), undefined, { duration: SNACKBAR_DURATION_MS });
 				},
+				error: () => undefined,
 			});
 		});
 	}
 
-	/** A disabled button still needs a name, and the reason is the useful part of it. */
 	protected renameLabel(category: CategoryItem): string {
 		return category.protected ? `${category.name} is built in and cannot be renamed` : `Rename ${category.name}`;
 	}
@@ -103,23 +105,23 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 
 	private buildDeleteMessage(category: CategoryItem): string {
 		if (category.transaction_count === 0 && category.rule_count === 0) {
-			return "Nothing uses this category.";
+			return "Nothing uses this category";
 		}
 
 		const moved = this.buildMoveSummary(category.transaction_count, category.rule_count);
 		const verb = category.transaction_count + category.rule_count === 1 ? "moves" : "move";
 
-		return `${moved} ${verb} to ${this.service.uncategorized()}.`;
+		return `${moved} ${verb} to ${this.service.uncategorized()}`;
 	}
 
 	private buildDeletedMessage(name: string, response: CategoryDeleteResponse): string {
 		if (response.moved_transactions === 0 && response.deleted_rules === 0) {
-			return `Category ${name} deleted.`;
+			return `Category ${name} deleted`;
 		}
 
 		const moved = this.buildMoveSummary(response.moved_transactions, response.deleted_rules);
 
-		return `Category ${name} deleted. ${moved} moved to ${this.service.uncategorized()}.`;
+		return `Category ${name} deleted. ${moved} moved to ${this.service.uncategorized()}`;
 	}
 
 	private buildMoveSummary(transactions: number, rules: number): string {

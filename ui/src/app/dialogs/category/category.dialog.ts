@@ -6,28 +6,14 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ApiClientService } from "@shared/api/api-client.service";
-import { CategoriesResponse } from "@shared/api/categories/model";
+import { CategoryDialogData, CategoryDialogResult } from "@app/shared/interfaces/category.interface";
 
 export const MAXIMUM_CATEGORY_NAME_LENGTH = 40;
 
-export interface CategoryDialogData {
-	mode: "create" | "rename";
-	/** The current name when renaming, empty when creating. */
-	name: string;
-}
-
-export interface CategoryDialogResult {
-	response: CategoriesResponse;
-	/** The name as submitted, already trimmed, so the caller can word its message. */
-	name: string;
-}
-
-/** Trim-aware, because a field holding only spaces is empty as far as the API is concerned. */
 function nonBlank(control: AbstractControl<string>): ValidationErrors | null {
 	return control.value.trim().length > 0 ? null : { required: true };
 }
 
-/** One name field, in either mode: create appends a category, rename changes one in place. */
 @Component({
 	selector: "penniless-category-dialog",
 	imports: [A11yModule, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule],
@@ -72,7 +58,7 @@ export class CategoryDialog {
 				this.loading.set(false);
 				this.dialogRef.close({ response, name } satisfies CategoryDialogResult);
 			},
-			// The interceptor has already shown the message. The dialog stays open with the name intact
+			// The error interceptor has already shown the message. The dialog stays open with the name intact
 			// so the save can be retried.
 			error: () => this.loading.set(false),
 		});

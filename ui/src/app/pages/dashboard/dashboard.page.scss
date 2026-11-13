@@ -46,6 +46,12 @@ penniless-dashboard {
 		font: var(--mat-sys-body-small);
 	}
 
+	.operation-note {
+		margin: -0.5rem 0 0;
+		color: var(--text-muted);
+		font: var(--mat-sys-body-small);
+	}
+
 	.reconnect-warning {
 		display: flex;
 		align-items: center;

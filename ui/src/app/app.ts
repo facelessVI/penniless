@@ -15,7 +15,6 @@ export class App {
 	private readonly router = inject(Router);
 	private readonly statusService = inject(StatusService);
 
-	/* Nothing mounts until the connection status is known, so an unconnected visit never flashes the dashboard. */
 	protected readonly resolved = signal(false);
 
 	constructor() {
@@ -29,7 +28,6 @@ export class App {
 				this.redirectIfNeeded(status);
 			},
 			error: () => {
-				/* The error banner already reports it; show whatever route was asked for. */
 				this.resolved.set(true);
 			},
 		});

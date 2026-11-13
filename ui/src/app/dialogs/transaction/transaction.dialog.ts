@@ -21,13 +21,6 @@ export interface TransactionDialogData {
 	categories: string[];
 }
 
-/**
- * One transaction's details plus the keyword and category selects that teach a rule.
- *
- * The keyword select offers what the description is made of and any rule that already matches it, and
- * opens on the rule that actually decides the row. Picking `Uncategorized` removes the selected
- * keyword's rule instead of writing one.
- */
 @Component({
 	selector: "penniless-transaction-dialog",
 	imports: [MatButtonModule, MatDialogModule, MatFormFieldModule, MatSelectModule],
@@ -152,7 +145,7 @@ export class TransactionDialog implements OnInit {
 				this.loading.set(false);
 				this.dialogRef.close(response);
 			},
-			// The interceptor has already shown the message. The dialog stays open with the selection
+			// The error interceptor has already shown the message. The dialog stays open with the selection
 			// intact so the save can be retried.
 			error: () => this.loading.set(false),
 		});

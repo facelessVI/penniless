@@ -163,10 +163,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
 		const match = result.match_type === "contains" ? `keyword ${result.pattern}` : `description ${result.pattern}`;
 
 		if (result.rule_deleted) {
-			return `${result.updated} transaction${plural} updated after removing ${match}.`;
+			return `${result.updated} transaction${plural} updated after removing ${match}`;
 		}
 
-		return `${result.updated} transaction${plural} set to ${result.category} (${match}).`;
+		return `${result.updated} transaction${plural} set to ${result.category} (${match})`;
 	}
 
 	private setupSubscriptions(): void {

@@ -3,7 +3,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
 import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { ErrorService } from "@shared/services/error.service";
-import { LoadingService } from "@shared/services/loading.service";
 
 export interface NavLink {
 	label: string;
@@ -20,7 +19,6 @@ export interface NavLink {
 })
 export class MainLayoutComponent {
 	protected readonly errorService = inject(ErrorService);
-	protected readonly loadingService = inject(LoadingService);
 
 	protected readonly links: NavLink[] = [
 		{ label: "Dashboard", route: "/dashboard" },
