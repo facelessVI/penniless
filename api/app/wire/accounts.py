@@ -1,6 +1,6 @@
 """The account list and the cash-total toggle."""
 
-from app.wire.base import ApiModel
+from app.common.api_model import ApiModel
 
 
 class AccountResponse(ApiModel):

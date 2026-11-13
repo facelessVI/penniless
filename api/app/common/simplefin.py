@@ -12,8 +12,8 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 import httpx
 from pydantic import ValidationError
 
-from app.config import settings
-from app.errors import (
+from app.common.config import settings
+from app.common.errors import (
     INVALID_BASE64_MESSAGE,
     INVALID_CLAIM_URL_MESSAGE,
     SimpleFinError,
@@ -23,7 +23,7 @@ from app.errors import (
     payment_required_error,
     upstream_error,
 )
-from app.wire.simplefin import SimpleFinAccount, SimpleFinAccountSet, SimpleFinConnection, SimpleFinTransaction
+from app.common.simplefin_api import SimpleFinAccount, SimpleFinAccountSet, SimpleFinConnection, SimpleFinTransaction
 
 REQUEST_TIMEOUT_SECONDS = 30.0
 FIXTURE_ACCESS_URL = "https://fixture.invalid/accounts"

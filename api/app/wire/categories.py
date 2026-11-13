@@ -1,6 +1,6 @@
 """The category list and the name a create or rename carries."""
 
-from app.wire.base import ApiModel
+from app.common.api_model import ApiModel
 
 
 class CategoryItem(ApiModel):

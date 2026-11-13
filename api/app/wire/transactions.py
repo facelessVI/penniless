@@ -1,6 +1,6 @@
 """The period summary, the transaction list, and the keyword-and-rule models the dialog uses."""
 
-from app.wire.base import ApiModel
+from app.common.api_model import ApiModel
 
 
 class SummaryResponse(ApiModel):

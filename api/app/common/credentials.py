@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.config import CREDENTIALS_FILENAMES, settings
+from app.common.config import CREDENTIALS_FILENAMES, settings
 
 CREDENTIALS_MODE = 0o600
 

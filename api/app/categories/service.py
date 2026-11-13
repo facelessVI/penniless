@@ -16,7 +16,6 @@ means and owns every transaction boundary.
 
 import sqlite3
 
-from app import db
 from app.categories import persistence
 from app.categories.constants import (
     KEYWORD_SOURCE_DESCRIPTION,
@@ -56,6 +55,7 @@ from app.categories.models import (
     KeywordOption,
     KeywordOptions,
 )
+from app.common import db
 
 
 def get_category_rules(connection: sqlite3.Connection) -> CategoryRules:

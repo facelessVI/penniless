@@ -2,7 +2,7 @@
 
 from pydantic import Field
 
-from app.wire.base import ApiModel
+from app.common.api_model import ApiModel
 
 
 class HealthResponse(ApiModel):

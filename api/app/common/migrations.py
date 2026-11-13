@@ -8,7 +8,7 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.config import MIGRATIONS_DIR
+from app.common.config import MIGRATIONS_DIR
 
 MIGRATIONS_TABLE_DDL = """
 CREATE TABLE IF NOT EXISTS schema_migrations (

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
 
-API_DIR = Path(__file__).resolve().parent.parent
+API_DIR = Path(__file__).resolve().parent.parent.parent
 MIGRATIONS_DIR = API_DIR / "migrations"
 
 Source = Literal["live", "fixture"]

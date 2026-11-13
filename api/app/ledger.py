@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from app import db
 from app.categories.constants import TRANSFERS_CATEGORY
+from app.common import db
 
 DEFAULT_PAGE_SIZE = 200
 MAXIMUM_PAGE_SIZE = 200

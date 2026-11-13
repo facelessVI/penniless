@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import db, handlers, migrations
 from app.categories import service as category_service
-from app.config import settings
+from app.common import db, handlers, migrations
+from app.common.config import settings
 from app.routers import accounts, categories, setup, transactions
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")

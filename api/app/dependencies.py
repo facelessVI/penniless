@@ -10,9 +10,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app import db
 from app.categories import service
 from app.categories.matching import CategoryRules
+from app.common import db
 
 
 def category_rules(

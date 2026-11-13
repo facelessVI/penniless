@@ -6,8 +6,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app import converters, db, ledger
+from app import converters, ledger
 from app.categories import service
+from app.common import db
 from app.wire.transactions import (
     SummaryResponse,
     TransactionCategoryRequest,

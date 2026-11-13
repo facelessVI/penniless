@@ -5,9 +5,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import converters, db
+from app import converters
 from app.categories import service
 from app.categories.matching import CategoryRules
+from app.common import db
 from app.dependencies import category_rules
 from app.wire.categories import (
     ApplyCategoriesResponse,

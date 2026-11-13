@@ -12,7 +12,7 @@ from typing import cast
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app import errors, ledger
+from app import ledger
 from app.categories.errors import (
     CategoryNameError,
     CategoryRulesError,
@@ -22,6 +22,7 @@ from app.categories.errors import (
     UnknownRuleError,
     UnknownTransactionError,
 )
+from app.common import errors
 
 # Every domain error the API translates, with the status it answers with. A 400 is a
 # request the caller can fix; a 404 is a key that names nothing stored.

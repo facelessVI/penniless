@@ -8,13 +8,13 @@ from typing import Any
 
 from app.categories.matching import CategoryRules
 from app.categories.service import get_category_rules
-from app.config import settings
-from app.db import now_iso
-from app.errors import SimpleFinError, sanitize_message
-from app.money import parse_cents
-from app.simplefin import AccountSource
-from app.wire.simplefin import SimpleFinAccount, SimpleFinConnection
-from app.wire.simplefin import SimpleFinError as SimpleFinErrorEntry
+from app.common.config import settings
+from app.common.db import now_iso
+from app.common.errors import SimpleFinError, sanitize_message
+from app.common.money import parse_cents
+from app.common.simplefin import AccountSource
+from app.common.simplefin_api import SimpleFinAccount, SimpleFinConnection
+from app.common.simplefin_api import SimpleFinError as SimpleFinErrorEntry
 
 BACKFILL_MONTHS = 12
 DAYS_PER_MONTH = 30.44

@@ -8,8 +8,9 @@ import sqlite3
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 
-from app import ingest, migrations
-from app.wire.simplefin import (
+from app import ingest
+from app.common import migrations
+from app.common.simplefin_api import (
     SimpleFinAccount,
     SimpleFinAccountSet,
     SimpleFinConnection,

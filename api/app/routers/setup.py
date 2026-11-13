@@ -6,8 +6,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from app import credentials, db, errors, ingest, simplefin
-from app.config import settings
+from app import ingest
+from app.common import credentials, db, errors, simplefin
+from app.common.config import settings
 from app.wire.setup import (
     BackfillRequest,
     BackfillResponse,

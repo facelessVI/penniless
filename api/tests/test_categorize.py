@@ -10,10 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from app import db, ingest, migrations
+from app import ingest
 from app.categories import constants, errors, models, service
-from app.config import MIGRATIONS_DIR
-from app.wire.simplefin import SimpleFinAccount
+from app.common import db, migrations
+from app.common.config import MIGRATIONS_DIR
+from app.common.simplefin_api import SimpleFinAccount
 
 DECLARED_CATEGORIES = (
     "Income",

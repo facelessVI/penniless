@@ -5,7 +5,7 @@ from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.config import settings
+from app.common.config import settings
 
 
 def connect(database_path: Path | None = None) -> sqlite3.Connection:

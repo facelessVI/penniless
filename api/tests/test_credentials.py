@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from app import credentials
-from app.config import Settings, Source
-from app.config import settings as current_settings
+from app.common import credentials
+from app.common.config import Settings, Source
+from app.common.config import settings as current_settings
 
 LIVE_ACCESS_URL = "https://demo:secret@bridge.simplefin.org/simplefin/accounts"
 FIXTURE_ACCESS_URL = "https://fixture.invalid/accounts"
