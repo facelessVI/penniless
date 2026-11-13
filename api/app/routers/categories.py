@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends
 
 from app import converters, db
 from app.categories import service
+from app.categories.matching import CategoryRules
+from app.dependencies import category_rules
 from app.wire.categories import (
     ApplyCategoriesResponse,
     CategoriesResponse,
@@ -20,9 +22,8 @@ router = APIRouter(tags=["categories"])
 @router.get("/categories", response_model=CategoriesResponse)
 def list_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+    _rules: Annotated[CategoryRules, Depends(category_rules)],
 ) -> CategoriesResponse:
-    service.get_category_rules(connection)
-
     return converters.to_categories(service.list_categories(connection))
 
 
@@ -61,8 +62,6 @@ def delete_category(
 @router.post("/categories/apply", response_model=ApplyCategoriesResponse)
 def apply_categories(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+    rules: Annotated[CategoryRules, Depends(category_rules)],
 ) -> ApplyCategoriesResponse:
-    rules = service.get_category_rules(connection)
-    result = service.apply_rules(connection, rules)
-
-    return converters.to_apply_result(result)
+    return converters.to_apply_result(service.apply_rules(connection, rules))
