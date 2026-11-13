@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 
 from app import converters, db
 from app.categories import service
-from app.schemas import (
+from app.wire.categories import (
     ApplyCategoriesResponse,
     CategoriesResponse,
     CategoryDeleteResponse,

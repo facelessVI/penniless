@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app import converters, db, ledger
 from app.categories import service
-from app.schemas import (
+from app.wire.transactions import (
     SummaryResponse,
     TransactionCategoryRequest,
     TransactionCategoryResponse,

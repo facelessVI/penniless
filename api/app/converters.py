@@ -12,12 +12,14 @@ from app import ledger
 from app.categories import models
 from app.categories.constants import UNCATEGORIZED_CATEGORY
 from app.categories.matching import Rule
-from app.schemas import (
-    AccountResponse,
+from app.wire.accounts import AccountResponse
+from app.wire.categories import (
     ApplyCategoriesResponse,
     CategoriesResponse,
     CategoryDeleteResponse,
     CategoryItem,
+)
+from app.wire.transactions import (
     SummaryResponse,
     TransactionCategoryResponse,
     TransactionItem,

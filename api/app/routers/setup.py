@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app import credentials, db, errors, ingest, simplefin
 from app.config import settings
-from app.schemas import (
+from app.wire.setup import (
     BackfillRequest,
     BackfillResponse,
     ConnectRequest,

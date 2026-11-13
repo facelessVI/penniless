@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 
 from app import ingest, migrations
-from app.schemas import (
+from app.wire.simplefin import (
     SimpleFinAccount,
     SimpleFinAccountSet,
     SimpleFinConnection,

@@ -12,9 +12,9 @@ from app.config import settings
 from app.db import now_iso
 from app.errors import SimpleFinError, sanitize_message
 from app.money import parse_cents
-from app.schemas import SimpleFinAccount, SimpleFinConnection
-from app.schemas import SimpleFinError as SimpleFinErrorEntry
 from app.simplefin import AccountSource
+from app.wire.simplefin import SimpleFinAccount, SimpleFinConnection
+from app.wire.simplefin import SimpleFinError as SimpleFinErrorEntry
 
 BACKFILL_MONTHS = 12
 DAYS_PER_MONTH = 30.44

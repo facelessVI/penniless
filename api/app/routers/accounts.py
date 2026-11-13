@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from app import converters, db, ledger
-from app.schemas import AccountResponse, AccountUpdateRequest
+from app.wire.accounts import AccountResponse, AccountUpdateRequest
 
 router = APIRouter(tags=["accounts"])
 

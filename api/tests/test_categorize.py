@@ -13,7 +13,7 @@ import pytest
 from app import db, ingest, migrations
 from app.categories import constants, errors, models, service
 from app.config import MIGRATIONS_DIR
-from app.schemas import SimpleFinAccount
+from app.wire.simplefin import SimpleFinAccount
 
 DECLARED_CATEGORIES = (
     "Income",

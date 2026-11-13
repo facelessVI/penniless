@@ -23,7 +23,7 @@ from app.errors import (
     payment_required_error,
     upstream_error,
 )
-from app.schemas import SimpleFinAccount, SimpleFinAccountSet, SimpleFinConnection, SimpleFinTransaction
+from app.wire.simplefin import SimpleFinAccount, SimpleFinAccountSet, SimpleFinConnection, SimpleFinTransaction
 
 REQUEST_TIMEOUT_SECONDS = 30.0
 FIXTURE_ACCESS_URL = "https://fixture.invalid/accounts"
