@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="ui/public/brand/penniless-horizontal-dark.svg">
+    <img src="ui/public/brand/penniless-horizontal.png" alt="Penniless" width="420">
+  </picture>
+</p>
+
 # Penniless
 
 A local-only personal finance dashboard. It pulls read-only accounts and transactions from
