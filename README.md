@@ -82,3 +82,7 @@ docs/working-with-penniless.md    how to run it, manage state, and work on it
 [`docs/working-with-penniless.md`](docs/working-with-penniless.md) covers running the app, the
 files under `api/.data/`, quota discipline, how categories and rules work, migrations, and the
 checks to run before committing.
+
+## License
+
+[MIT](LICENSE).
