@@ -6,12 +6,10 @@ call belongs in `ledger`, `categories` or `ingest`.
 """
 
 import sqlite3
-from collections.abc import Sequence
 
 from app import ledger
 from app.categories.model import categories_model as models
 from app.categories.model.categories_model import Rule
-from app.wire.accounts import AccountResponse
 from app.wire.transactions import (
     SummaryResponse,
     TransactionCategoryResponse,
@@ -21,24 +19,6 @@ from app.wire.transactions import (
     TransactionKeywordRule,
     TransactionListResponse,
 )
-
-
-def to_account(row: sqlite3.Row) -> AccountResponse:
-    return AccountResponse(
-        connection_id=row["connection_id"],
-        account_id=row["account_id"],
-        connection_name=row["connection_name"],
-        name=row["name"],
-        currency=row["currency"],
-        balance_cents=row["balance_cents"],
-        available_balance_cents=row["available_balance_cents"],
-        balance_date=row["balance_date"],
-        include_in_cash=bool(row["include_in_cash"]),
-    )
-
-
-def to_accounts(rows: Sequence[sqlite3.Row]) -> list[AccountResponse]:
-    return [to_account(row) for row in rows]
 
 
 def to_summary(figures: ledger.SummaryFigures) -> SummaryResponse:
