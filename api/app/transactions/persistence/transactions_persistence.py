@@ -1,8 +1,8 @@
 """Every SQL statement about reading transactions through the API.
 
 One function, one statement, and no decisions: the filter clauses are the only thing built
-here, and the page total travels with the rows so a caller cannot report one without the
-other. Reads come back as `TransactionRow`, never as a raw row.
+here, and the page total travels with the transactions so a caller cannot report one without
+the other. Reads come back as `Transaction`, never as a raw row.
 """
 
 import sqlite3
@@ -13,10 +13,10 @@ from app.categories.constants.categories_constants import TRANSFERS_CATEGORY
 from app.transactions.constants.transactions_constants import DEFAULT_PAGE_SIZE
 from app.transactions.model.transactions_model import (
     SummaryFigures,
+    Transaction,
     TransactionFilters,
     TransactionPage,
     TransactionRecord,
-    TransactionRow,
 )
 
 SUMMARY_SQL = """
@@ -113,13 +113,15 @@ def find_transaction_page(
     total_row = connection.execute(
         f"SELECT count(*) AS total {TRANSACTION_FROM_SQL} {where_sql}", parameters
     ).fetchone()
-    rows = connection.execute(
+    transactions = connection.execute(
         f"SELECT {TRANSACTION_COLUMNS} {TRANSACTION_FROM_SQL} {where_sql} "
         "ORDER BY t.posted_date DESC, t.transaction_id DESC LIMIT ? OFFSET ?",
         [*parameters, limit, offset],
     ).fetchall()
 
-    return TransactionPage(rows=[TransactionRow.from_row(row) for row in rows], total=int(total_row["total"]))
+    return TransactionPage(
+        transactions=[Transaction.from_row(row) for row in transactions], total=int(total_row["total"])
+    )
 
 
 def upsert_transaction(connection: sqlite3.Connection, record: TransactionRecord, fetched_at: str) -> None:

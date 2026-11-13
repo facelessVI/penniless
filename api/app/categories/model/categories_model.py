@@ -51,7 +51,7 @@ class CategoryRules:
 
 
 @dataclass(frozen=True)
-class CategoryRow:
+class Category:
     """A category with how many transactions and rules currently carry it."""
 
     name: str
@@ -64,8 +64,8 @@ class CategoryRow:
         return self.name in PROTECTED_CATEGORIES
 
     @staticmethod
-    def from_row(row: sqlite3.Row) -> "CategoryRow":
-        return CategoryRow(
+    def from_row(row: sqlite3.Row) -> "Category":
+        return Category(
             name=str(row["name"]),
             position=int(row["position"]),
             transaction_count=int(row["transaction_count"]),
@@ -74,7 +74,7 @@ class CategoryRow:
 
 
 @dataclass(frozen=True)
-class ClassificationRow:
+class TransactionCategory:
     """One stored transaction as the re-classify pass reads it: its key, description and category."""
 
     connection_id: str
@@ -84,8 +84,8 @@ class ClassificationRow:
     category: str
 
     @staticmethod
-    def from_row(row: sqlite3.Row) -> "ClassificationRow":
-        return ClassificationRow(
+    def from_row(row: sqlite3.Row) -> "TransactionCategory":
+        return TransactionCategory(
             connection_id=str(row["connection_id"]),
             account_id=str(row["account_id"]),
             transaction_id=str(row["transaction_id"]),
@@ -129,5 +129,8 @@ class ApplyResult:
 
 @dataclass(frozen=True)
 class CategoryDeleteResult:
+    """The category list after the delete, plus what the delete moved and dropped."""
+
+    categories: list[Category]
     moved_transactions: int
     deleted_rules: int

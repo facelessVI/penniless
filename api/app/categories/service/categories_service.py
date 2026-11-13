@@ -47,8 +47,8 @@ from app.categories.matching.categories_matching import (
 from app.categories.model.categories_model import (
     ApplyResult,
     AssignResult,
+    Category,
     CategoryDeleteResult,
-    CategoryRow,
     CategoryRules,
     KeywordOption,
     KeywordOptions,
@@ -255,19 +255,19 @@ def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyRe
     updated = 0
     uncategorized = 0
     updated_at = db.now_iso()
-    rows = persistence.get_classification_rows(connection)
+    stored = persistence.get_classifications(connection)
 
     with connection:
-        for row in rows:
-            category = rules.classify(row.description)
+        for transaction_category in stored:
+            category = rules.classify(transaction_category.description)
 
             if category == UNCATEGORIZED_CATEGORY:
                 uncategorized += 1
 
-            if category == row.category:
+            if category == transaction_category.category:
                 continue
 
-            persistence.set_transaction_category(connection, row, category, updated_at)
+            persistence.set_transaction_category(connection, transaction_category, category, updated_at)
             updated += 1
 
     return ApplyResult(updated=updated, uncategorized=uncategorized)
@@ -291,12 +291,12 @@ def normalize_category_name(name: str) -> str:
     return normalized
 
 
-def list_categories(connection: sqlite3.Connection) -> list[CategoryRow]:
+def list_categories(connection: sqlite3.Connection) -> list[Category]:
     """Every category in display order, with how many transactions and rules currently carry it."""
     return persistence.get_categories_with_counts(connection)
 
 
-def create_category(connection: sqlite3.Connection, name: str) -> None:
+def create_category(connection: sqlite3.Connection, name: str) -> list[Category]:
     """Append a category to the end of the order; positions are never reused."""
     normalized = normalize_category_name(name)
     ensure_category_name_is_free(connection, normalized)
@@ -304,8 +304,10 @@ def create_category(connection: sqlite3.Connection, name: str) -> None:
     with connection:
         persistence.insert_category(connection, normalized)
 
+    return list_categories(connection)
 
-def rename_category(connection: sqlite3.Connection, name: str, new_name: str) -> None:
+
+def rename_category(connection: sqlite3.Connection, name: str, new_name: str) -> list[Category]:
     """Rename in place. Both foreign keys carry `ON UPDATE CASCADE`, so rules and rows follow."""
     ensure_category_exists(connection, name)
     ensure_category_is_editable(name)
@@ -316,12 +318,15 @@ def rename_category(connection: sqlite3.Connection, name: str, new_name: str) ->
     with connection:
         persistence.rename_category(connection, name, normalized)
 
+    return list_categories(connection)
+
 
 def delete_category(connection: sqlite3.Connection, name: str) -> CategoryDeleteResult:
     """Move the category's transactions to `Uncategorized`, drop its rules, then drop the category.
 
     `ON DELETE RESTRICT` would refuse the delete while either table still names the category, and
-    moving the rows keeps every transaction rather than losing the ones it held.
+    moving the rows keeps every transaction rather than losing the ones it held. The list that comes
+    back is the one the caller would otherwise have to ask for again.
     """
     ensure_category_exists(connection, name)
     ensure_category_is_editable(name)
@@ -335,7 +340,11 @@ def delete_category(connection: sqlite3.Connection, name: str) -> CategoryDelete
         deleted_rules = persistence.delete_category_rules(connection, name)
         persistence.delete_category(connection, name)
 
-    return CategoryDeleteResult(moved_transactions=moved_transactions, deleted_rules=deleted_rules)
+    return CategoryDeleteResult(
+        categories=list_categories(connection),
+        moved_transactions=moved_transactions,
+        deleted_rules=deleted_rules,
+    )
 
 
 def ensure_category_exists(connection: sqlite3.Connection, name: str) -> None:

@@ -1,6 +1,6 @@
 """The typed shapes of the transactions table and the results the endpoints return.
 
-Every stored row comes back as a `TransactionRow` built by its own `from_row`, so the
+Every stored row comes back as a `Transaction` built by its own `from_row`, so the
 column names live next to the fields they fill.
 """
 
@@ -11,7 +11,7 @@ from datetime import date
 
 
 @dataclass(frozen=True)
-class TransactionRow:
+class Transaction:
     """One stored transaction, with its account's name joined in for the list."""
 
     connection_id: str
@@ -24,8 +24,8 @@ class TransactionRow:
     amount_cents: int
 
     @staticmethod
-    def from_row(row: sqlite3.Row) -> "TransactionRow":
-        return TransactionRow(
+    def from_row(row: sqlite3.Row) -> "Transaction":
+        return Transaction(
             connection_id=str(row["connection_id"]),
             account_id=str(row["account_id"]),
             account_name=str(row["account_name"]),
@@ -63,9 +63,9 @@ class TransactionFilters:
 
 @dataclass(frozen=True)
 class TransactionPage:
-    """One page of rows plus the total that matches the filters, for the pager."""
+    """One page of transactions plus the total that matches the filters, for the pager."""
 
-    rows: Sequence[TransactionRow]
+    transactions: Sequence[Transaction]
     total: int
 
 

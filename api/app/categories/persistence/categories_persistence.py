@@ -8,7 +8,7 @@ service too, which is why nothing here opens one. Reads come back as the typed c
 
 import sqlite3
 
-from app.categories.model.categories_model import CategoryRow, ClassificationRow, Rule
+from app.categories.model.categories_model import Category, Rule, TransactionCategory
 
 LOAD_CATEGORIES_SQL = "SELECT name FROM categories ORDER BY position"
 LOAD_RULES_SQL = "SELECT match_type, pattern, category, updated_at FROM rules"
@@ -82,13 +82,13 @@ def get_all_descriptions(connection: sqlite3.Connection) -> list[str]:
     return [str(row["description"]) for row in connection.execute(SELECT_ALL_DESCRIPTIONS_SQL)]
 
 
-def get_classification_rows(connection: sqlite3.Connection) -> list[ClassificationRow]:
-    return [ClassificationRow.from_row(row) for row in connection.execute(SELECT_CLASSIFICATION_SQL)]
+def get_classifications(connection: sqlite3.Connection) -> list[TransactionCategory]:
+    return [TransactionCategory.from_row(row) for row in connection.execute(SELECT_CLASSIFICATION_SQL)]
 
 
 def set_transaction_category(
     connection: sqlite3.Connection,
-    classification: ClassificationRow,
+    transaction_category: TransactionCategory,
     category: str,
     updated_at: str,
 ) -> None:
@@ -97,9 +97,9 @@ def set_transaction_category(
         (
             category,
             updated_at,
-            classification.connection_id,
-            classification.account_id,
-            classification.transaction_id,
+            transaction_category.connection_id,
+            transaction_category.account_id,
+            transaction_category.transaction_id,
         ),
     )
 
@@ -125,8 +125,8 @@ def delete_rule(connection: sqlite3.Connection, match_type: str, pattern: str) -
     return connection.execute(DELETE_RULE_SQL, (match_type, pattern)).rowcount
 
 
-def get_categories_with_counts(connection: sqlite3.Connection) -> list[CategoryRow]:
-    return [CategoryRow.from_row(row) for row in connection.execute(SELECT_CATEGORIES_WITH_COUNTS_SQL)]
+def get_categories_with_counts(connection: sqlite3.Connection) -> list[Category]:
+    return [Category.from_row(row) for row in connection.execute(SELECT_CATEGORIES_WITH_COUNTS_SQL)]
 
 
 def get_category(connection: sqlite3.Connection, name: str) -> str | None:

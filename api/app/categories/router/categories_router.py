@@ -33,9 +33,7 @@ def create_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    service.create_category(connection, request.name)
-
-    return converter.to_categories(service.list_categories(connection))
+    return converter.to_categories(service.create_category(connection, request.name))
 
 
 @router.patch("/categories/{name}", response_model=CategoriesResponse)
@@ -44,9 +42,7 @@ def rename_category(
     request: CategoryNameRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoriesResponse:
-    service.rename_category(connection, name, request.name)
-
-    return converter.to_categories(service.list_categories(connection))
+    return converter.to_categories(service.rename_category(connection, name, request.name))
 
 
 @router.delete("/categories/{name}", response_model=CategoryDeleteResponse)
@@ -54,10 +50,7 @@ def delete_category(
     name: str,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoryDeleteResponse:
-    result = service.delete_category(connection, name)
-    categories = converter.to_categories(service.list_categories(connection))
-
-    return converter.to_category_delete(categories, result)
+    return converter.to_category_delete(service.delete_category(connection, name))
 
 
 @router.post("/categories/apply", response_model=ApplyCategoriesResponse)

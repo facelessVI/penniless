@@ -19,7 +19,7 @@ from app.transactions.api.transactions_api import (
     TransactionKeywordRule,
     TransactionListResponse,
 )
-from app.transactions.model.transactions_model import SummaryFigures, TransactionPage, TransactionRow
+from app.transactions.model.transactions_model import SummaryFigures, Transaction, TransactionPage
 
 
 def to_summary(figures: SummaryFigures) -> SummaryResponse:
@@ -35,22 +35,22 @@ def to_summary(figures: SummaryFigures) -> SummaryResponse:
     )
 
 
-def to_transaction(row: TransactionRow) -> TransactionItem:
+def to_transaction(transaction: Transaction) -> TransactionItem:
     return TransactionItem(
-        connection_id=row.connection_id,
-        account_id=row.account_id,
-        account_name=row.account_name,
-        transaction_id=row.transaction_id,
-        posted_date=row.posted_date,
-        description=row.description,
-        category=row.category,
-        amount_cents=row.amount_cents,
+        connection_id=transaction.connection_id,
+        account_id=transaction.account_id,
+        account_name=transaction.account_name,
+        transaction_id=transaction.transaction_id,
+        posted_date=transaction.posted_date,
+        description=transaction.description,
+        category=transaction.category,
+        amount_cents=transaction.amount_cents,
     )
 
 
 def to_transaction_list(page: TransactionPage, limit: int, offset: int) -> TransactionListResponse:
     return TransactionListResponse(
-        items=[to_transaction(row) for row in page.rows],
+        items=[to_transaction(transaction) for transaction in page.transactions],
         total=page.total,
         limit=limit,
         offset=offset,
