@@ -67,3 +67,18 @@ class TransactionPage:
 
     rows: Sequence[TransactionRow]
     total: int
+
+
+@dataclass(frozen=True)
+class TransactionRecord:
+    """One transaction to store: what the upsert needs, before its category is decided."""
+
+    connection_id: str
+    account_id: str
+    transaction_id: str
+    posted_at: str
+    posted_date: str
+    transacted_at: str | None
+    description: str
+    amount_cents: int
+    category: str

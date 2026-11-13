@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from app import ingest
+from app.accounts.service import accounts_service
 from app.categories.constants import categories_constants as constants
 from app.categories.errors import categories_errors as errors
 from app.categories.model import categories_model as models
@@ -18,6 +18,8 @@ from app.categories.service import categories_service as service
 from app.common import db, migrations
 from app.common.config import MIGRATIONS_DIR
 from app.common.simplefin_api import SimpleFinAccount
+from app.transactions.persistence import transactions_persistence
+from app.transactions.service import transactions_service
 
 DECLARED_CATEGORIES = (
     "Income",
@@ -99,6 +101,19 @@ def seed_transaction(
         (transaction_id, description, category),
     )
     connection.commit()
+
+
+def store_account(
+    connection: sqlite3.Connection,
+    account: SimpleFinAccount,
+    connection_id: str,
+    rules: models.CategoryRules,
+    connection_name: str = "Stub Bank",
+) -> None:
+    """Write one account the way an ingest does: the account row, then its transactions."""
+    fetched_at = db.now_iso()
+    accounts_service.upsert_account(connection, account, connection_id, connection_name, fetched_at)
+    transactions_service.upsert_transactions(connection, account, connection_id, fetched_at, rules)
 
 
 def stored_category(connection: sqlite3.Connection, transaction_id: str) -> str:
@@ -342,10 +357,10 @@ def test_a_learned_rule_survives_an_ingest_upsert() -> None:
         }
     )
 
-    ingest.upsert_account(connection, account, "CON-1", "Stub Bank", db.now_iso(), rules)
-    ingest.upsert_account(connection, account, "CON-1", "Stub Bank", db.now_iso(), rules)
+    store_account(connection, account, "CON-1", rules)
+    store_account(connection, account, "CON-1", rules)
 
-    assert ingest.count_transactions(connection) == 1
+    assert transactions_persistence.count_transactions(connection) == 1
     assert stored_category(connection, "TX-1") == "Dining"
 
 
@@ -368,7 +383,7 @@ def test_a_keyword_rule_classifies_a_transaction_it_has_never_seen() -> None:
         }
     )
 
-    ingest.upsert_account(connection, account, "CON-1", "Stub Bank", db.now_iso(), rules)
+    store_account(connection, account, "CON-1", rules)
 
     assert stored_category(connection, "TX-1") == "Dining"
 

@@ -15,6 +15,7 @@ from app.transactions.model.transactions_model import (
     SummaryFigures,
     TransactionFilters,
     TransactionPage,
+    TransactionRecord,
     TransactionRow,
 )
 
@@ -30,6 +31,23 @@ SELECT
 FROM transactions
 WHERE posted_date BETWEEN :start AND :end
 """
+
+UPSERT_TRANSACTION_SQL = """
+INSERT INTO transactions (
+    connection_id, account_id, transaction_id, posted_at, posted_date, transacted_at,
+    description, amount_cents, category, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (connection_id, account_id, transaction_id) DO UPDATE SET
+    posted_at = excluded.posted_at,
+    posted_date = excluded.posted_date,
+    transacted_at = excluded.transacted_at,
+    description = excluded.description,
+    amount_cents = excluded.amount_cents,
+    category = excluded.category,
+    updated_at = excluded.updated_at
+"""
+
+COUNT_TRANSACTIONS_SQL = "SELECT count(*) AS total FROM transactions"
 
 TRANSACTION_COLUMNS = """
     t.connection_id, t.account_id, a.name AS account_name, t.transaction_id, t.posted_date,
@@ -102,3 +120,26 @@ def find_transaction_page(
     ).fetchall()
 
     return TransactionPage(rows=[TransactionRow.from_row(row) for row in rows], total=int(total_row["total"]))
+
+
+def upsert_transaction(connection: sqlite3.Connection, record: TransactionRecord, fetched_at: str) -> None:
+    connection.execute(
+        UPSERT_TRANSACTION_SQL,
+        (
+            record.connection_id,
+            record.account_id,
+            record.transaction_id,
+            record.posted_at,
+            record.posted_date,
+            record.transacted_at,
+            record.description,
+            record.amount_cents,
+            record.category,
+            fetched_at,
+            fetched_at,
+        ),
+    )
+
+
+def count_transactions(connection: sqlite3.Connection) -> int:
+    return int(connection.execute(COUNT_TRANSACTIONS_SQL).fetchone()["total"])

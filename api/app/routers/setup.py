@@ -6,9 +6,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from app import ingest
+from app.accounts.persistence import accounts_persistence
 from app.common import credentials, db, errors, simplefin
 from app.common.config import settings
+from app.fetches.persistence import fetches_persistence
+from app.fetches.service import fetches_service
+from app.transactions.persistence import transactions_persistence
 from app.wire.setup import (
     BackfillRequest,
     BackfillResponse,
@@ -30,15 +33,15 @@ def get_health() -> HealthResponse:
 @router.get("/status", response_model=StatusResponse)
 def get_status(connection: Annotated[sqlite3.Connection, Depends(db.get_connection)]) -> StatusResponse:
     stored_credentials = credentials.read_credentials()
-    last_fetch = ingest.get_last_fetch(connection)
-    guard = ingest.refresh_guard(connection)
+    last_fetch = fetches_persistence.get_last_fetch(connection)
+    guard = fetches_service.refresh_guard(connection)
 
     return StatusResponse(
         connected=stored_credentials is not None,
         source=settings.source,
         credential_claimed_at=stored_credentials.claimed_at if stored_credentials is not None else None,
-        account_count=ingest.count_accounts(connection),
-        transaction_count=ingest.count_transactions(connection),
+        account_count=accounts_persistence.count_accounts(connection),
+        transaction_count=transactions_persistence.count_transactions(connection),
         last_fetch_status=last_fetch.status if last_fetch is not None else None,
         last_fetched_at=last_fetch.fetched_at if last_fetch is not None else None,
         last_fetch_error_code=last_fetch.error_code if last_fetch is not None else None,
@@ -58,11 +61,11 @@ def post_connect(
     source = simplefin.get_account_source()
     access_url = source.claim(request.setup_token)
     stored_credentials = credentials.write_credentials(access_url)
-    backfill = ingest.run_backfill(connection, source, stored_credentials.access_url)
+    backfill = fetches_service.run_backfill(connection, source, stored_credentials.access_url)
 
     return ConnectResponse(
         connected=True,
-        account_count=ingest.count_accounts(connection),
+        account_count=accounts_persistence.count_accounts(connection),
         backfill_windows=len(backfill.windows),
         transactions_stored=backfill.transactions_stored,
     )
@@ -77,7 +80,7 @@ def post_refresh(
     if stored_credentials is None:
         raise errors.not_connected_error()
 
-    guard = ingest.refresh_guard(connection)
+    guard = fetches_service.refresh_guard(connection)
 
     if not guard.allowed:
         message = f"Refresh is not allowed yet. Next refresh allowed at {guard.next_allowed_at}."
@@ -93,12 +96,12 @@ def post_refresh(
         )
 
     source = simplefin.get_account_source()
-    result = ingest.run_refresh(connection, source, stored_credentials.access_url)
-    next_guard = ingest.refresh_guard(connection)
+    result = fetches_service.run_refresh(connection, source, stored_credentials.access_url)
+    next_guard = fetches_service.refresh_guard(connection)
 
     return RefreshResponse(
         fetched=True,
-        account_count=ingest.count_accounts(connection),
+        account_count=accounts_persistence.count_accounts(connection),
         transactions_stored=result.transactions_stored,
         fetched_at=result.fetched_at,
         refresh_allowed=next_guard.allowed,
@@ -116,6 +119,6 @@ def post_backfill(
         raise errors.not_connected_error()
 
     source = simplefin.get_account_source()
-    backfill = ingest.run_backfill(connection, source, stored_credentials.access_url, request.months)
+    backfill = fetches_service.run_backfill(connection, source, stored_credentials.access_url, request.months)
 
     return BackfillResponse(windows=len(backfill.windows), transactions_stored=backfill.transactions_stored)

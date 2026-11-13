@@ -8,7 +8,7 @@ import sqlite3
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 
-from app import ingest
+from app.accounts.persistence import accounts_persistence
 from app.common import migrations
 from app.common.simplefin_api import (
     SimpleFinAccount,
@@ -17,10 +17,14 @@ from app.common.simplefin_api import (
     SimpleFinError,
     SimpleFinTransaction,
 )
+from app.fetches.constants import fetches_constants
+from app.fetches.model import fetches_model
+from app.fetches.service import fetches_service
+from app.transactions.persistence import transactions_persistence
 
 BALANCE_EPOCH = 1_790_000_000
 POSTED_EPOCH = 1_789_000_000
-WINDOW = ingest.FetchWindow(start_date=date(2026, 11, 6), end_date=date(2026, 11, 11))
+WINDOW = fetches_model.FetchWindow(start_date=date(2026, 11, 6), end_date=date(2026, 11, 11))
 ADVISORY_MESSAGE = "Requested date range exceeds recommended range of 45 days."
 CONNECTION_MESSAGE = "Authentication failed for Stub Bank"
 
@@ -76,8 +80,10 @@ def newest_fetch_row(connection: sqlite3.Connection) -> sqlite3.Row:
     return row
 
 
-def guard_after(connection: sqlite3.Connection, fetched_at: str, minutes: int) -> ingest.RefreshGuard:
-    return ingest.refresh_guard(connection, now=datetime.fromisoformat(fetched_at) + timedelta(minutes=minutes))
+def guard_after(connection: sqlite3.Connection, fetched_at: str, minutes: int) -> fetches_model.RefreshGuard:
+    return fetches_service.refresh_guard(
+        connection, now=datetime.fromisoformat(fetched_at) + timedelta(minutes=minutes)
+    )
 
 
 def test_gen_api_advisory_records_a_successful_fetch() -> None:
@@ -85,15 +91,15 @@ def test_gen_api_advisory_records_a_successful_fetch() -> None:
     connection = make_connection()
     account_source = StubAccountSource(build_account_set([SimpleFinError(code="gen.api", msg=ADVISORY_MESSAGE)]))
 
-    result = ingest.ingest_window(connection, account_source, "https://unused.invalid", WINDOW)
+    result = fetches_service.ingest_window(connection, account_source, "https://unused.invalid", WINDOW)
 
     row = newest_fetch_row(connection)
     assert row["status"] == "ok"
     assert row["error_code"] == "gen.api"
     assert row["transaction_count"] == 1
     assert "45 days" in row["error_message"]
-    assert ingest.count_accounts(connection) == 1
-    assert ingest.count_transactions(connection) == 1
+    assert accounts_persistence.count_accounts(connection) == 1
+    assert transactions_persistence.count_transactions(connection) == 1
     assert guard_after(connection, result.fetched_at, minutes=1).allowed is False
 
 
@@ -104,7 +110,7 @@ def test_connection_error_records_a_failed_fetch() -> None:
         build_account_set([SimpleFinError(code="con.auth", msg=CONNECTION_MESSAGE, conn_id="CON-1")])
     )
 
-    result = ingest.ingest_window(connection, account_source, "https://unused.invalid", WINDOW)
+    result = fetches_service.ingest_window(connection, account_source, "https://unused.invalid", WINDOW)
 
     row = newest_fetch_row(connection)
     assert row["status"] == "error"
@@ -117,22 +123,22 @@ def test_backfill_windows_cover_twelve_months_without_exceeding_the_cap() -> Non
     """Twelve months of history, oldest first, each window safely inside the Bridge's 90-day cap."""
     today = date(2026, 11, 10)
 
-    windows = ingest.plan_backfill_windows(12, today)
+    windows = fetches_service.plan_backfill_windows(12, today)
 
     assert windows[-1].end_date == today + timedelta(days=1)
     assert (windows[-1].end_date - windows[0].start_date).days >= 365
 
     for window in windows:
-        assert (window.end_date - window.start_date).days == ingest.WINDOW_LENGTH_DAYS
+        assert (window.end_date - window.start_date).days == fetches_constants.WINDOW_LENGTH_DAYS
         assert (window.end_date - window.start_date).days <= 89
 
     for older, newer in zip(windows, windows[1:], strict=False):
         assert newer.start_date - older.start_date == timedelta(
-            days=ingest.WINDOW_LENGTH_DAYS - ingest.WINDOW_OVERLAP_DAYS
+            days=fetches_constants.WINDOW_LENGTH_DAYS - fetches_constants.WINDOW_OVERLAP_DAYS
         )
 
     one_month_end = today + timedelta(days=1)
-    one_month_start = one_month_end - timedelta(days=ingest.WINDOW_LENGTH_DAYS)
-    assert ingest.plan_backfill_windows(1, today) == [
-        ingest.FetchWindow(start_date=one_month_start, end_date=one_month_end)
+    one_month_start = one_month_end - timedelta(days=fetches_constants.WINDOW_LENGTH_DAYS)
+    assert fetches_service.plan_backfill_windows(1, today) == [
+        fetches_model.FetchWindow(start_date=one_month_start, end_date=one_month_end)
     ]
