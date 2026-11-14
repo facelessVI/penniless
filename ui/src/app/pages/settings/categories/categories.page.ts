@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation, inject } from "@angular/core";
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDragPreview, CdkDropList, moveItemInArray } from "@angular/cdk/drag-drop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
@@ -18,7 +19,7 @@ const pluralize = (count: number, noun: string): string => `${count} ${noun}${co
 
 @Component({
 	selector: "penniless-settings-categories",
-	imports: [MatButtonModule, MatTableModule],
+	imports: [CdkDrag, CdkDragHandle, CdkDragPreview, CdkDropList, MatButtonModule, MatTableModule],
 	templateUrl: "./categories.page.html",
 	styleUrl: "./categories.page.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,7 +31,7 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 	private readonly apiClient = inject(ApiClientService);
 
 	protected readonly service = inject(CategoriesPageService);
-	protected readonly columns = ["name", "transactions", "rules", "actions"];
+	protected readonly columns = ["handle", "name", "transactions", "rules", "actions"];
 
 	ngOnInit(): void {
 		this.service.load();
@@ -93,6 +94,22 @@ export class SettingsCategoriesPage implements OnInit, OnDestroy {
 				error: () => undefined,
 			});
 		});
+	}
+
+	protected onDrop(event: CdkDragDrop<CategoryItem[]>): void {
+		// A drop outside the table reports the row's last sorted index, which is not where the
+		// placeholder sat, so a sloppy drag would silently jump the row to the end.
+		if (!event.isPointerOverContainer || event.previousIndex === event.currentIndex) {
+			return;
+		}
+
+		const reordered = [...this.service.categories()];
+		moveItemInArray(reordered, event.previousIndex, event.currentIndex);
+		this.service.setOrder(reordered);
+	}
+
+	protected moveLabel(category: CategoryItem): string {
+		return `Move ${category.name}`;
 	}
 
 	protected renameLabel(category: CategoryItem): string {

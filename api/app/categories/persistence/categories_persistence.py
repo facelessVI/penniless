@@ -55,6 +55,10 @@ INSERT INTO categories (name, position) VALUES (?, (SELECT coalesce(max(position
 
 RENAME_CATEGORY_SQL = "UPDATE categories SET name = ? WHERE name = ?"
 
+INVERT_CATEGORY_POSITIONS_SQL = "UPDATE categories SET position = -position"
+
+SET_CATEGORY_POSITION_SQL = "UPDATE categories SET position = ? WHERE name = ?"
+
 REASSIGN_CATEGORY_TRANSACTIONS_SQL = "UPDATE transactions SET category = ?, updated_at = ? WHERE category = ?"
 
 DELETE_CATEGORY_RULES_SQL = "DELETE FROM rules WHERE category = ?"
@@ -147,6 +151,15 @@ def insert_category(connection: sqlite3.Connection, name: str) -> None:
 
 def rename_category(connection: sqlite3.Connection, name: str, new_name: str) -> None:
     connection.execute(RENAME_CATEGORY_SQL, (new_name, name))
+
+
+def invert_category_positions(connection: sqlite3.Connection) -> None:
+    """Park every position on a negative number, freeing the column for a whole new 1..n order."""
+    connection.execute(INVERT_CATEGORY_POSITIONS_SQL)
+
+
+def set_category_position(connection: sqlite3.Connection, name: str, position: int) -> None:
+    connection.execute(SET_CATEGORY_POSITION_SQL, (position, name))
 
 
 def reassign_category_transactions(

@@ -1,4 +1,4 @@
-"""The category list and the name a create or rename carries."""
+"""The category list, the name a create or rename carries, and the order a reorder carries."""
 
 from app.common.api_model import ApiModel
 
@@ -18,6 +18,10 @@ class CategoriesResponse(ApiModel):
 
 class CategoryNameRequest(ApiModel):
     name: str
+
+
+class CategoryOrderRequest(ApiModel):
+    names: list[str]
 
 
 class CategoryDeleteResponse(CategoriesResponse):

@@ -16,6 +16,8 @@ owns every transaction boundary.
 """
 
 import sqlite3
+from collections import Counter
+from collections.abc import Sequence
 
 from app.categories.constants.categories_constants import (
     KEYWORD_SOURCE_DESCRIPTION,
@@ -31,6 +33,7 @@ from app.categories.constants.categories_constants import (
 )
 from app.categories.errors.categories_errors import (
     CategoryNameError,
+    CategoryOrderError,
     CategoryRulesError,
     ProtectedCategoryError,
     RulePatternError,
@@ -297,7 +300,7 @@ def list_categories(connection: sqlite3.Connection) -> list[Category]:
 
 
 def create_category(connection: sqlite3.Connection, name: str) -> list[Category]:
-    """Append a category to the end of the order; positions are never reused."""
+    """Append a category to the end of the order."""
     normalized = normalize_category_name(name)
     ensure_category_name_is_free(connection, normalized)
 
@@ -345,6 +348,39 @@ def delete_category(connection: sqlite3.Connection, name: str) -> CategoryDelete
         moved_transactions=moved_transactions,
         deleted_rules=deleted_rules,
     )
+
+
+def reorder_categories(connection: sqlite3.Connection, names: Sequence[str]) -> list[Category]:
+    """Rewrite the whole display order as 1..n from the names given, closing any gap a delete left.
+
+    The caller sends the entire list rather than a moved row's neighbours, so a stale client cannot
+    leave two categories sharing a place. `position` is UNIQUE, so the old numbers are parked on
+    negatives first: writing 1..n straight over them would collide partway through.
+    """
+    ensure_order_is_every_category_once(names, persistence.get_category_names(connection))
+
+    with connection:
+        persistence.invert_category_positions(connection)
+
+        for position, name in enumerate(names, start=1):
+            persistence.set_category_position(connection, name, position)
+
+    return list_categories(connection)
+
+
+def ensure_order_is_every_category_once(names: Sequence[str], stored: Sequence[str]) -> None:
+    """A repeat would collide on the unique index and a missing name would lose its place entirely."""
+    repeated = sorted(name for name, count in Counter(names).items() if count > 1)
+    unknown = sorted(set(names) - set(stored))
+    missing = sorted(set(stored) - set(names))
+    problems = [
+        f"{label}: {', '.join(problems_names)}"
+        for label, problems_names in (("repeated", repeated), ("unknown", unknown), ("missing", missing))
+        if problems_names
+    ]
+
+    if problems:
+        raise CategoryOrderError(f"The order must name every category exactly once ({'; '.join(problems)}).")
 
 
 def ensure_category_exists(connection: sqlite3.Connection, name: str) -> None:

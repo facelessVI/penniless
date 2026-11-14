@@ -28,6 +28,18 @@ export class CategoriesPageService {
 		this.uncategorized.set(response.uncategorized);
 	}
 
+	setOrder(categories: CategoryItem[]): void {
+		const previous = this.categories();
+		const names = categories.map((category) => category.name);
+
+		this.categories.set(categories);
+
+		this.apiClient.categories.standard.reorderCategories(names).subscribe({
+			next: (response) => this.setCategories(response),
+			error: () => this.categories.set(previous),
+		});
+	}
+
 	reset(): void {
 		this.categories.set([]);
 		this.uncategorized.set("Uncategorized");

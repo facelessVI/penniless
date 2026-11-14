@@ -1,6 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { ApplyCategoriesResponse, CategoriesResponse, CategoryDeleteResponse, CategoryNameContract } from "./model";
+import { ApplyCategoriesResponse, CategoriesResponse, CategoryDeleteResponse, CategoryNameContract, CategoryOrderContract } from "./model";
 
 @Injectable({ providedIn: "root" })
 export class CategoriesStandardService {
@@ -24,6 +24,13 @@ export class CategoriesStandardService {
 		const body = contract;
 
 		return this.http.patch<CategoriesResponse>(url, body);
+	}
+
+	reorderCategories(names: string[]) {
+		const url = "/api/categories/order";
+		const body: CategoryOrderContract = { names };
+
+		return this.http.put<CategoriesResponse>(url, body);
 	}
 
 	deleteCategory(name: string) {

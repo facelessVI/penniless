@@ -1082,3 +1082,47 @@ def test_delete_category_rejects_an_unknown_name() -> None:
         service.delete_category(connection, "groceries")
 
     assert category_names(connection) == list(DECLARED_CATEGORIES)
+
+
+def test_reorder_categories_rewrites_every_position_from_the_order_given() -> None:
+    """The page sends the whole list, so every position is rewritten and `Transfers` moves too."""
+    connection = make_connection()
+    ordered_names = ["Dining", *[name for name in DECLARED_CATEGORIES if name != "Dining"]]
+
+    summaries = service.reorder_categories(connection, ordered_names)
+
+    assert [summary.name for summary in summaries] == ordered_names
+    assert [summary.position for summary in summaries] == list(range(1, 12))
+
+
+def test_reorder_categories_closes_the_gap_a_delete_left() -> None:
+    connection = make_connection()
+    service.delete_category(connection, "Dining")
+    remaining = [name for name in DECLARED_CATEGORIES if name != "Dining"]
+
+    service.reorder_categories(connection, [*remaining[1:], remaining[0]])
+
+    positions = category_positions(connection)
+
+    assert positions[remaining[1]] == 1
+    assert positions[remaining[0]] == 10
+    assert service.create_category(connection, "Pets")[-1].position == 11
+
+
+@pytest.mark.parametrize(
+    "names",
+    [
+        list(DECLARED_CATEGORIES[:-1]),
+        [*DECLARED_CATEGORIES, "Pets"],
+        [DECLARED_CATEGORIES[0], *DECLARED_CATEGORIES],
+        [],
+    ],
+)
+def test_reorder_categories_rejects_an_order_that_is_not_every_category_once(names: list[str]) -> None:
+    """A missing name would lose its place, and a repeat or an extra one would collide on the index."""
+    connection = make_connection()
+
+    with pytest.raises(errors.CategoryOrderError, match="exactly once"):
+        service.reorder_categories(connection, names)
+
+    assert category_names(connection) == list(DECLARED_CATEGORIES)

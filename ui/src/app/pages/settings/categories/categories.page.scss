@@ -34,6 +34,30 @@ penniless-settings-categories {
 	.categories-table {
 		width: 100%;
 
+		th.cell-handle,
+		td.cell-handle {
+			width: 2.5rem;
+			padding-right: 0;
+		}
+
+		.cell-handle button {
+			--mat-icon-button-icon-size: 20px;
+			color: var(--text-muted);
+			cursor: grab;
+
+			&:active {
+				cursor: grabbing;
+			}
+		}
+
+		.cdk-drag-placeholder {
+			opacity: 0.3;
+		}
+
+		.cdk-drop-list-dragging .mat-mdc-row:not(.cdk-drag-placeholder) {
+			transition: transform 180ms cubic-bezier(0, 0, 0.2, 1);
+		}
+
 		th.cell-count,
 		td.cell-count {
 			width: 8rem;

@@ -13,7 +13,23 @@
 	@if (service.loading()) {
 		<p class="page-hint">Loading categories…</p>
 	} @else {
-		<table mat-table [dataSource]="service.categories()" class="categories-table">
+		<table mat-table [dataSource]="service.categories()" class="categories-table" cdkDropList (cdkDropListDropped)="onDrop($event)">
+			<ng-container matColumnDef="handle">
+				<th mat-header-cell *matHeaderCellDef class="cell-handle"><span class="visually-hidden">Move</span></th>
+				<td mat-cell *matCellDef="let category" class="cell-handle">
+					<button mat-icon-button type="button" cdkDragHandle [attr.aria-label]="moveLabel(category)">
+						<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<circle cx="9" cy="6" r="1.6" />
+							<circle cx="15" cy="6" r="1.6" />
+							<circle cx="9" cy="12" r="1.6" />
+							<circle cx="15" cy="12" r="1.6" />
+							<circle cx="9" cy="18" r="1.6" />
+							<circle cx="15" cy="18" r="1.6" />
+						</svg>
+					</button>
+				</td>
+			</ng-container>
+
 			<ng-container matColumnDef="name">
 				<th mat-header-cell *matHeaderCellDef>Name</th>
 				<td mat-cell *matCellDef="let category">
@@ -85,7 +101,11 @@
 			</ng-container>
 
 			<tr mat-header-row *matHeaderRowDef="columns"></tr>
-			<tr mat-row *matRowDef="let row; columns: columns"></tr>
+			<tr mat-row *matRowDef="let category; columns: columns" cdkDrag>
+				<ng-template cdkDragPreview [data]="category" let-draggedName="name">
+					<div class="category-drag-preview">{{ draggedName }}</div>
+				</ng-template>
+			</tr>
 		</table>
 	}
 </div>

@@ -27,3 +27,7 @@ class RulePatternError(ValueError):
 
 class UnknownRuleError(LookupError):
     """Nothing to delete: no rule of that type carries that keyword."""
+
+
+class CategoryOrderError(ValueError):
+    """A reorder is not every stored category exactly once, so it cannot be a display order."""

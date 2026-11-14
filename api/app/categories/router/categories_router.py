@@ -1,4 +1,4 @@
-"""The category list, creating, renaming and deleting categories, and re-applying the rules."""
+"""The category list, creating, renaming, deleting and reordering categories, and re-applying the rules."""
 
 import sqlite3
 from typing import Annotated
@@ -10,6 +10,7 @@ from app.categories.api.categories_api import (
     CategoriesResponse,
     CategoryDeleteResponse,
     CategoryNameRequest,
+    CategoryOrderRequest,
 )
 from app.categories.converter import categories_converter as converter
 from app.categories.dependencies.categories_dependencies import category_rules
@@ -51,6 +52,14 @@ def delete_category(
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> CategoryDeleteResponse:
     return converter.to_category_delete(service.delete_category(connection, name))
+
+
+@router.put("/categories/order", response_model=CategoriesResponse)
+def reorder_categories(
+    request: CategoryOrderRequest,
+    connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
+) -> CategoriesResponse:
+    return converter.to_categories(service.reorder_categories(connection, request.names))
 
 
 @router.post("/categories/apply", response_model=ApplyCategoriesResponse)

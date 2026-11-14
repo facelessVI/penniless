@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from app.accounts.errors.accounts_errors import UnknownAccountError
 from app.categories.errors.categories_errors import (
     CategoryNameError,
+    CategoryOrderError,
     CategoryRulesError,
     ProtectedCategoryError,
     RulePatternError,
@@ -36,6 +37,7 @@ DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     InvalidDateRangeError: 400,
     CategoryRulesError: 400,
     CategoryNameError: 400,
+    CategoryOrderError: 400,
     ProtectedCategoryError: 400,
     RulePatternError: 400,
     UnknownRuleError: 400,

@@ -15,6 +15,10 @@ export interface CategoryNameContract {
 	name: string;
 }
 
+export interface CategoryOrderContract {
+	names: string[];
+}
+
 export interface CategoryDeleteResponse extends CategoriesResponse {
 	movedTransactions: number;
 	deletedRules: number;

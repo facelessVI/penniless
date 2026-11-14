@@ -99,6 +99,10 @@ no file to edit.
   with how many transactions and rules currently carry it.
     - **Create category** opens a dialog with one name field and appends the category to the end of
       the list.
+    - Each row has a grip handle at its left: drag it to move the category, and the new order is
+      saved when you let go of it. Dropping outside the list leaves the order as it was, and the
+      whole list is renumbered from 1 every time, so a gap a delete left behind is closed by the
+      next move. `Transfers` and `Uncategorized` move like any other category.
     - The pencil renames, through the same dialog. The rename cascades to every rule and transaction
       that carries the name, so nothing needs reclassifying afterwards.
     - The trashcan asks first, then deletes. Deleting a category that is in use moves its
@@ -107,8 +111,7 @@ no file to edit.
     - `Transfers` and `Uncategorized` cannot be renamed or deleted: the first is how the app
       recognizes a transfer, and the second is where unmatched transactions land.
     - A name is trimmed, may not be blank or contain a slash, may be at most 40 characters, and may
-      not collide with an existing name in any case. Reordering is not built: new categories go to
-      the end.
+      not collide with an existing name in any case.
 - Click any transaction row on the **Transactions** page to open **Transaction**. The **Keyword**
   select opens on the rule that decides the row (or on the whole description when nothing matches
   it) and the **Category** select opens on the row's current category. Saving writes or re-points that
