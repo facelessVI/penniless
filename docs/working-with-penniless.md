@@ -23,7 +23,7 @@ npm run dev              # fixture mode, both processes
 ```
 
 Open `http://127.0.0.1:4200`. In fixture mode, paste the demo setup token from
-`api/fixtures/README.md` on the Setup page, then press **Backfill 12 months** on the Dashboard.
+`api/fixtures/README.md` on the Setup page, then press **Backfill 12 months** on **Settings -> Data**.
 Fixture data covers 2026-01-01 through 2026-11-10; outside that range the tables are legitimately
 empty.
 
@@ -126,10 +126,32 @@ no file to edit.
 - `Transfers` is only a category. A row whose category is `Transfers` is a transfer, which excludes it
   from in/out totals and renders it muted.
 - Invalid category data fails at startup and before every fetch, so a bad row cannot spend quota.
-- Ingest reclassifies on every upsert. To reclassify existing rows, press **Re-apply rules** or
-  `POST /api/categories/apply`.
+- Ingest reclassifies on every upsert. To reclassify existing rows, press **Re-apply rules** on
+  **Settings -> Data** or call `POST /api/categories/apply`.
 - The live database from before this switch has its rows reset to `Uncategorized`, because the rules
   that produced those labels are gone.
+
+## Managing data
+
+**Settings** -> **Data** (the gear at the right of the top nav, `/settings/data`) describes what this
+machine currently holds and holds the two actions that rewrite it. Connecting stays on **Setup**, and
+fetches of new postings stay on the dashboard's **Refresh**.
+
+- The metadata panel reads `GET /api/status` on every visit and lists: **Connection**, **Source**
+  (live or fixture), **Credential claimed**, **Accounts**, **Transactions**, **Last fetch** (with the
+  error code when the last fetch failed, in red) and **Refresh** (allowed now, or when it is allowed
+  next). A line under it states the minimum gap between refreshes.
+- **Re-apply rules** re-runs every category rule over every stored transaction and reports how many
+  rows moved. It reads local rows only, so it spends no SimpleFIN calls, and it works even when the
+  app is disconnected.
+- **Backfill 12 months** asks first, because it spends 5 of the 24 daily SimpleFIN calls, then
+  refetches the last year in five windows. Existing transactions are updated in place, not duplicated.
+  It is disabled with a link to **Setup** when no access URL is stored.
+- Both actions report through a snackbar and disable themselves while running. They share one slot
+  with **Refresh**, so a backfill running from this page also disables **Refresh** on the dashboard,
+  and the reverse.
+- Nothing is fetched on page load: the page only reads status. A fixture restart still leaves the app
+  connected with zero rows, so backfill again.
 
 ## Migrations and schema
 
@@ -153,7 +175,7 @@ fixture rule snapshot and restore) - it is not a licence to grow a broad Python 
 | Symptom | Likely cause |
 | --- | --- |
 | Tables empty in fixture mode | Date outside 2026-01-01 - 2026-11-10, or DB was wiped on restart |
-| Empty after restart | Fixture reset cleared rows; run backfill again (credential survives) |
+| Empty after restart | Fixture reset cleared rows; run **Backfill 12 months** on **Settings -> Data** (the credential survives) |
 | Refresh returns 429 | Refresh guard, wait for `next_refresh_allowed_at` |
 | Startup fails on categories | `categories` table empty or missing `Uncategorized`, or a rule pointing at a category that does not exist |
 | Money looks wrong for one account | The **Counts as cash** toggle |

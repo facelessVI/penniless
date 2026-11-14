@@ -39,9 +39,9 @@ The UI is at `http://127.0.0.1:4200` and the API at `http://127.0.0.1:8000`.
 
 Fixture mode replays the hand-written SimpleFIN responses in `api/fixtures/`, so the app is fully
 usable with fake data and without a SimpleFIN account: paste the demo setup token from
-`api/fixtures/README.md` on the **Setup** page, then press **Backfill 12 months** on the
-**Dashboard**. The fixture database is rebuilt on every startup, so accounts and transactions are
-empty until you backfill again; the category rules you taught it survive.
+`api/fixtures/README.md` on the **Setup** page, then press **Backfill 12 months** on
+**Settings** -> **Data**. The fixture database is rebuilt on every startup, so accounts and
+transactions are empty until you backfill again; the category rules you taught it survive.
 
 Then categorize from the **Transactions** page: click a row, pick a keyword, pick a category, save.
 Every transaction that keyword matches moves, including ones fetched later.

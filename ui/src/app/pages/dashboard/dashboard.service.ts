@@ -1,14 +1,11 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
 import { AccountResponse } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
-import { BackfillContract } from "@shared/api/setup/model";
 import { SummaryResponse } from "@shared/api/summary/model";
 import { DataOperationService } from "@shared/services/data-operation.service";
 import { StatusService } from "@shared/services/status.service";
 import { firstDayOfMonth, fromIsoDate, toIsoDate } from "@shared/utils/date.util";
 import { formatCents, formatSignedCents } from "@shared/utils/money.util";
-
-export const BACKFILL_MONTHS = 12;
 
 export interface DashboardSummaryStrip {
 	totalIn: string;
@@ -70,7 +67,6 @@ export class DashboardPageService {
 				return null;
 		}
 	});
-	readonly rulesMessage = signal<string | null>(null);
 	readonly sortColumn = signal<DashboardSortColumn | null>(null);
 	readonly sortDirection = signal<DashboardSortDirection | null>(null);
 
@@ -185,42 +181,11 @@ export class DashboardPageService {
 		});
 	}
 
-	applyRules(): void {
-		this.dataOperation.start("apply-rules");
-		this.rulesMessage.set(null);
-
-		this.apiClient.categories.standard.applyCategories().subscribe({
-			next: (result) => {
-				this.dataOperation.stop();
-				this.rulesMessage.set(
-					`${result.updated} transaction${result.updated === 1 ? "" : "s"} re-categorized, ${result.uncategorized} left uncategorized.`,
-				);
-				this.load();
-			},
-			error: () => this.dataOperation.stop(),
-		});
-	}
-
-	backfill(): void {
-		const contract: BackfillContract = { months: BACKFILL_MONTHS };
-
-		this.dataOperation.start("backfill");
-
-		this.apiClient.setup.standard.backfill(contract).subscribe({
-			next: () => {
-				this.dataOperation.stop();
-				this.load();
-			},
-			error: () => this.dataOperation.stop(),
-		});
-	}
-
 	reset(): void {
 		this.accounts.set([]);
 		this.summary.set(null);
 		this.loading.set(true);
 		this.savingCash.set(false);
-		this.rulesMessage.set(null);
 		this.sortColumn.set(null);
 		this.sortDirection.set(null);
 	}
