@@ -40,12 +40,6 @@ penniless-dashboard {
 		font: var(--mat-sys-body-small);
 	}
 
-	.rules-note {
-		margin: -0.5rem 0 0;
-		color: var(--text-muted);
-		font: var(--mat-sys-body-small);
-	}
-
 	.operation-note {
 		margin: -0.5rem 0 0;
 		color: var(--text-muted);
@@ -140,5 +134,9 @@ penniless-dashboard {
 		border-radius: var(--mat-sys-corner-medium);
 		color: var(--text-muted);
 		text-align: center;
+
+		a {
+			color: var(--mat-sys-primary);
+		}
 	}
 }

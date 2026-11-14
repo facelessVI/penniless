@@ -1,0 +1,44 @@
+<div class="page-body data-page">
+	<header class="page-header">
+		<div class="page-heading">
+			<h1>Data</h1>
+			<p class="page-hint">What this machine currently holds, and the two actions that rewrite it.</p>
+		</div>
+	</header>
+
+	@if (service.operationLabel(); as operationLabel) {
+		<p class="operation-note" role="status">{{ operationLabel }}</p>
+	}
+
+	<section class="metadata" aria-label="Current data">
+		@if (service.metadata(); as rows) {
+			<dl class="metadata-list">
+				@for (row of rows; track row.label) {
+					<div class="metadata-row">
+						<dt>{{ row.label }}</dt>
+						<dd [class.metadata-failed]="row.failed">{{ row.value }}</dd>
+					</div>
+				}
+			</dl>
+
+			@if (service.refreshIntervalNote(); as note) {
+				<p class="metadata-note">{{ note }}</p>
+			}
+		} @else {
+			<p class="page-hint">Loading data…</p>
+		}
+	</section>
+
+	<section class="actions" aria-label="Actions">
+		<h2>Actions</h2>
+
+		<div class="action-buttons">
+			<button mat-stroked-button type="button" [disabled]="service.busy()" (click)="onApplyRules()">Re-apply rules</button>
+			<button mat-stroked-button type="button" [disabled]="service.busy() || !service.connected()" (click)="onBackfill()">Backfill 12 months</button>
+		</div>
+
+		@if (!service.connected()) {
+			<p class="action-hint">Connect with a setup token before backfilling. <a routerLink="/setup">Setup</a></p>
+		}
+	</section>
+</div>

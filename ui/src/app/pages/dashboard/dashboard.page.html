@@ -8,8 +8,6 @@
 		</div>
 
 		<div class="page-actions">
-			<button mat-stroked-button type="button" [disabled]="service.busy()" (click)="service.applyRules()">Re-apply rules</button>
-			<button mat-stroked-button type="button" [disabled]="service.busy()" (click)="service.backfill()">Backfill 12 months</button>
 			<button mat-flat-button type="button" [disabled]="service.busy() || !canRefresh()" (click)="service.refresh()">Refresh</button>
 		</div>
 	</header>
@@ -29,10 +27,6 @@
 		<p class="refresh-note">Last fetched {{ lastFetchedAt | date: "MMM d, h:mm a" }}.</p>
 	} @else {
 		<p class="refresh-note">Nothing has been fetched from SimpleFIN yet.</p>
-	}
-
-	@if (service.rulesMessage(); as rulesMessage) {
-		<p class="rules-note" role="status">{{ rulesMessage }}</p>
 	}
 
 	@if (service.fetchFailed()) {
@@ -113,7 +107,10 @@
 		} @else if (service.loading()) {
 			<p class="page-hint">Loading accounts…</p>
 		} @else {
-			<p class="empty-state">No accounts yet. Connect with a setup token, or press Backfill 12 months to pull the last year of history.</p>
+			<p class="empty-state">
+				No accounts yet. Connect with a setup token, or go to
+				<a routerLink="/settings/data">Settings -> Data</a> to pull the last year of history.
+			</p>
 		}
 	</section>
 </div>
