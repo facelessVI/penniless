@@ -115,6 +115,16 @@ penniless-dashboard {
 			gap: 0.4rem;
 		}
 
+		.account-name {
+			color: var(--text);
+			text-decoration: none;
+
+			&:hover {
+				color: var(--mat-sys-primary);
+				text-decoration: underline;
+			}
+		}
+
 		.cell-muted {
 			color: var(--text-muted);
 		}

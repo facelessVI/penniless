@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
-import { AccountResponse, accountKey, resolvedAccountName } from "@shared/api/accounts/model";
+import { AccountResponse, resolvedAccountName } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
 import { SummaryResponse } from "@shared/api/summary/model";
 import { DataOperationService } from "@shared/services/data-operation.service";
@@ -49,8 +49,6 @@ export class DashboardPageService {
 	readonly status = this.statusService.status;
 	/** The page's own first paint: summary and accounts, joined so the tables do not pop in one at a time. */
 	readonly loading = signal(true);
-	/** A cash-toggle write is in flight, so the toggles stay disabled until it settles. */
-	readonly savingCash = signal(false);
 	/** An action that must not overlap another one is running; the one long state the app shares. */
 	readonly busy = this.dataOperation.busy;
 	readonly operationLabel = computed(() => {
@@ -149,22 +147,6 @@ export class DashboardPageService {
 		this.sortDirection.set(direction);
 	}
 
-	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
-		this.savingCash.set(true);
-
-		this.apiClient.accounts.standard.updateAccount(account.connectionId, account.accountId, { includeInCash }).subscribe({
-			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (accountKey(candidate) === accountKey(updated) ? updated : candidate)));
-				this.savingCash.set(false);
-				this.refreshSummary();
-			},
-			error: () => {
-				this.savingCash.set(false);
-				this.reloadAccounts();
-			},
-		});
-	}
-
 	refresh(): void {
 		this.dataOperation.start("refresh");
 
@@ -185,24 +167,8 @@ export class DashboardPageService {
 		this.accounts.set([]);
 		this.summary.set(null);
 		this.loading.set(true);
-		this.savingCash.set(false);
 		this.sortColumn.set(null);
 		this.sortDirection.set(null);
-	}
-
-	/** Both cards read the summary, so a toggle makes them stale until it is refetched. */
-	private refreshSummary(): void {
-		const today = new Date();
-
-		this.apiClient.summary.standard.getSummary(toIsoDate(firstDayOfMonth(today)), toIsoDate(today)).subscribe({
-			next: (summary) => this.summary.set(summary),
-		});
-	}
-
-	private reloadAccounts(): void {
-		this.apiClient.accounts.standard.getAccounts().subscribe({
-			next: (accounts) => this.accounts.set(accounts),
-		});
 	}
 
 	private formatPeriod(start: string, end: string): string {
