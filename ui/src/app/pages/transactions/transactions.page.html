@@ -34,7 +34,7 @@
 				<mat-select [value]="service.accountId()" (selectionChange)="onAccountChange($event)">
 					<mat-option [value]="null">All accounts</mat-option>
 					@for (account of service.accounts(); track account.accountId) {
-						<mat-option [value]="account.accountId">{{ account.name }}</mat-option>
+						<mat-option [value]="account.accountId">{{ accountName(account) }}</mat-option>
 					}
 				</mat-select>
 			</mat-form-field>

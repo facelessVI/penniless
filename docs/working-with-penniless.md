@@ -88,6 +88,25 @@ SimpleFIN allows **24 `/accounts` calls per day** per access URL, and every fetc
 - `error_code` values in `gen.api` are advisories: data is complete and the fetch still counts as
   `ok`. Only `con.*`, `act.*`, `gen.auth`, and unknown codes are real failures.
 
+## Managing accounts
+
+**Settings** -> **Accounts** (the gear at the right of the top nav, `/settings/accounts`) is where an
+account gets the name and the note you recognize it by. There is no file to edit.
+
+- The page lists every stored account as an expansion panel. A closed panel shows the name the app
+  uses for the account and the connection it came from; several panels can be open at once, and the
+  button at the top right reads **Expand all** or **Collapse all** depending on where things stand.
+- Open a panel to edit the **Display name** and the **Description**. The hint under the name field is
+  what the institution calls the account, so you can always see what you renamed.
+- **Save** writes both fields and is disabled until one of them differs from what was loaded. Leaving
+  the name blank hands the account back to the institution's name; leaving the description blank
+  empties it. The description holds up to 500 characters.
+- A saved name is the name everywhere: the dashboard, the Transactions account filter and account
+  column, and the order accounts are listed in. A fetch never touches the name or the description,
+  only the balance and the institution's own name.
+- The dashboard's **Counts as cash** toggle writes through the same endpoint, so it changes nothing
+  about the name or the description.
+
 ## Managing categories
 
 Categories and rules live in SQLite, in two tables: `categories` (the closed list, with a `position`

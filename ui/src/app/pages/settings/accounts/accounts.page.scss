@@ -1,0 +1,96 @@
+penniless-settings-accounts {
+	display: block;
+
+	.page-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.page-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.page-heading {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		max-width: 46rem;
+	}
+
+	.page-hint {
+		margin: 0;
+		color: var(--text-muted);
+	}
+
+	.page-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.account-panels {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+
+		.account-panel {
+			border: 1px solid var(--border);
+			border-radius: var(--mat-sys-corner-medium);
+			background: var(--surface-raised);
+			box-shadow: none;
+
+			/* The header carries two lines, so it grows with them instead of clipping the connection. */
+			.mat-expansion-panel-header {
+				height: auto;
+				min-height: 3.75rem;
+			}
+		}
+	}
+
+	.panel-heading {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+		color: var(--text);
+	}
+
+	.panel-name {
+		font: var(--mat-sys-title-medium);
+	}
+
+	.panel-connection {
+		color: var(--text-muted);
+		font: var(--mat-sys-body-small);
+	}
+
+	.panel-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		max-width: 42rem;
+		padding-top: 0.75rem;
+	}
+
+	.panel-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.empty-state {
+		margin: 0;
+		padding: 1.5rem;
+		border: 1px dashed var(--border);
+		border-radius: var(--mat-sys-corner-medium);
+		color: var(--text-muted);
+		text-align: center;
+
+		a {
+			color: var(--mat-sys-primary);
+		}
+	}
+}
