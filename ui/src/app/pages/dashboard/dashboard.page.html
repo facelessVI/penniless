@@ -76,7 +76,7 @@
 			<table mat-table [dataSource]="service.accountRows()" class="accounts-table" matSort (matSortChange)="onSortChange($event)">
 				<ng-container matColumnDef="name">
 					<th mat-header-cell *matHeaderCellDef>Account</th>
-					<td mat-cell *matCellDef="let account">{{ account.name }}</td>
+					<td mat-cell *matCellDef="let account">{{ accountName(account) }}</td>
 				</ng-container>
 
 				<ng-container matColumnDef="connection">
@@ -96,7 +96,7 @@
 							[checked]="account.includeInCash"
 							[disabled]="service.savingCash() || service.busy()"
 							(change)="onCashToggle(account, $event.checked)"
-							[attr.aria-label]="'Count ' + account.name + ' in the cash total'"
+							[attr.aria-label]="'Count ' + accountName(account) + ' in the cash total'"
 						/>
 					</td>
 				</ng-container>

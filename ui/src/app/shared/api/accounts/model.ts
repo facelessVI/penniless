@@ -3,6 +3,8 @@ export interface AccountResponse {
 	accountId: string;
 	connectionName: string;
 	name: string;
+	displayName: string | null;
+	description: string | null;
 	currency: string;
 	balanceCents: number;
 	availableBalanceCents: number | null;
@@ -11,5 +13,11 @@ export interface AccountResponse {
 }
 
 export interface AccountUpdateContract {
-	includeInCash: boolean;
+	displayName?: string;
+	description?: string;
+	includeInCash?: boolean;
 }
+
+export const resolvedAccountName = (account: AccountResponse): string => account.displayName ?? account.name;
+
+export const accountKey = (account: AccountResponse): string => `${account.connectionId}/${account.accountId}`;

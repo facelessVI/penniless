@@ -5,7 +5,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
-import { AccountResponse } from "@shared/api/accounts/model";
+import { AccountResponse, resolvedAccountName } from "@shared/api/accounts/model";
 import { DashboardPageService, DashboardSortColumn, DashboardSortDirection } from "./dashboard.service";
 
 @Component({
@@ -18,6 +18,7 @@ import { DashboardPageService, DashboardSortColumn, DashboardSortDirection } fro
 })
 export class DashboardPage implements OnInit, OnDestroy {
 	protected readonly service = inject(DashboardPageService);
+	protected readonly accountName = resolvedAccountName;
 	protected readonly accountColumns = ["name", "connection", "balance", "cash"];
 
 	protected readonly refreshBlockedReason = computed(() => {

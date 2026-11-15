@@ -1,0 +1,63 @@
+<div class="page-body accounts-page">
+	@let accounts = service.accounts();
+
+	<header class="page-header">
+		<div class="page-heading">
+			<h1>Accounts</h1>
+			<p class="page-hint">
+				Every account SimpleFIN has stored. Give one your own name, or write down what it is for; a fetch never overwrites either.
+			</p>
+		</div>
+
+		@if (accounts.length > 0) {
+			<div class="page-actions">
+				<button mat-stroked-button type="button" (click)="toggleAll()">{{ toggleAllLabel() }}</button>
+			</div>
+		}
+	</header>
+
+	@if (service.loading()) {
+		<p class="page-hint">Loading accounts…</p>
+	} @else if (accounts.length === 0) {
+		<p class="empty-state">
+			No accounts yet. Connect with a setup token on <a routerLink="/setup">Setup</a>, or pull history on
+			<a routerLink="/settings/data">Settings -> Data</a>.
+		</p>
+	} @else {
+		<mat-accordion class="account-panels" [multi]="true">
+			@for (account of accounts; track accountKey(account)) {
+				@let form = service.formFor(account);
+
+				<mat-expansion-panel class="account-panel" [expanded]="isExpanded(account)" (expandedChange)="setExpanded(account, $event)">
+					<mat-expansion-panel-header>
+						<mat-panel-title class="panel-heading">
+							<span class="panel-name">{{ accountName(account) }}</span>
+							<span class="panel-connection">{{ account.connectionName }}</span>
+						</mat-panel-title>
+					</mat-expansion-panel-header>
+
+					<form class="panel-body" [formGroup]="form" (ngSubmit)="onSave(account)">
+						<mat-form-field appearance="outline" subscriptSizing="dynamic">
+							<mat-label>Display name</mat-label>
+							<input matInput formControlName="displayName" autocomplete="off" />
+							<mat-hint>Leave blank to use the name the institution gives: {{ account.name }}</mat-hint>
+						</mat-form-field>
+
+						<mat-form-field appearance="outline" subscriptSizing="dynamic">
+							<mat-label>Description</mat-label>
+							<textarea matInput formControlName="description" rows="3"></textarea>
+							<mat-hint>Up to {{ maximumDescriptionLength }} characters.</mat-hint>
+							@if (form.controls.description.hasError("maxlength")) {
+								<mat-error>A description can be at most {{ maximumDescriptionLength }} characters.</mat-error>
+							}
+						</mat-form-field>
+
+						<div class="panel-actions">
+							<button mat-flat-button type="submit" [disabled]="!canSave(account)">Save</button>
+						</div>
+					</form>
+				</mat-expansion-panel>
+			}
+		</mat-accordion>
+	}
+</div>

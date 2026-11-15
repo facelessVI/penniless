@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
-import { AccountResponse } from "@shared/api/accounts/model";
+import { AccountResponse, accountKey, resolvedAccountName } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
 import { SummaryResponse } from "@shared/api/summary/model";
 import { DataOperationService } from "@shared/services/data-operation.service";
@@ -25,7 +25,7 @@ export type DashboardSortColumn = "connection" | "balance";
 export type DashboardSortDirection = "asc" | "desc";
 
 const compareConnections = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
-	first.connectionName.localeCompare(second.connectionName) || first.name.localeCompare(second.name);
+	first.connectionName.localeCompare(second.connectionName) || resolvedAccountName(first).localeCompare(resolvedAccountName(second));
 
 const compareBalances = (first: DashboardAccountRow, second: DashboardAccountRow): number =>
 	first.balanceCents - second.balanceCents || compareConnections(first, second);
@@ -152,9 +152,9 @@ export class DashboardPageService {
 	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
 		this.savingCash.set(true);
 
-		this.apiClient.accounts.standard.updateIncludeInCash(account.connectionId, account.accountId, { includeInCash }).subscribe({
+		this.apiClient.accounts.standard.updateAccount(account.connectionId, account.accountId, { includeInCash }).subscribe({
 			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (candidate.accountId === updated.accountId ? updated : candidate)));
+				this.accounts.update((accounts) => accounts.map((candidate) => (accountKey(candidate) === accountKey(updated) ? updated : candidate)));
 				this.savingCash.set(false);
 				this.refreshSummary();
 			},

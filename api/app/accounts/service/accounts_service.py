@@ -6,11 +6,12 @@ so a router only ever reads its request and answers with whatever this module re
 """
 
 import sqlite3
+from dataclasses import replace
 from typing import Any
 
-from app.accounts.constants.accounts_constants import NON_CASH_ACCOUNT_TYPES
-from app.accounts.errors.accounts_errors import UnknownAccountError
-from app.accounts.model.accounts_model import Account
+from app.accounts.constants.accounts_constants import DESCRIPTION_MAXIMUM_LENGTH, NON_CASH_ACCOUNT_TYPES
+from app.accounts.errors.accounts_errors import AccountDescriptionError, AccountUpdateError, UnknownAccountError
+from app.accounts.model.accounts_model import Account, AccountChanges
 from app.accounts.persistence import accounts_persistence as persistence
 from app.common.dates import local_date
 from app.common.errors import SimpleFinError
@@ -45,21 +46,49 @@ def infer_include_in_cash(extra: dict[str, Any]) -> bool:
 
 
 def list_accounts(connection: sqlite3.Connection) -> list[Account]:
-    """Every stored account, ordered by connection then name."""
+    """Every stored account, ordered by connection then resolved name."""
     return persistence.get_accounts(connection)
 
 
-def set_account_included_in_cash(
-    connection: sqlite3.Connection, connection_id: str, account_id: str, include_in_cash: bool
+def resolve_display_name(display_name: str) -> str | None:
+    """A blank name is not a name: it hands the account back to what the institution calls it."""
+    return display_name.strip() or None
+
+
+def resolve_description(description: str) -> str | None:
+    """A blank description is an empty one, and a note is never longer than the cap."""
+    trimmed = description.strip()
+
+    if len(trimmed) > DESCRIPTION_MAXIMUM_LENGTH:
+        raise AccountDescriptionError(f"A description can be at most {DESCRIPTION_MAXIMUM_LENGTH} characters.")
+
+    return trimmed or None
+
+
+def update_account(
+    connection: sqlite3.Connection, connection_id: str, account_id: str, changes: AccountChanges
 ) -> Account:
-    """Write the cash toggle and return the updated account; an unknown key is the caller's error."""
+    """Write the fields `changes` carries and return the stored account; an unknown key is the caller's error."""
+    if changes.is_empty:
+        raise AccountUpdateError(
+            "An account update needs at least one of a display name, a description or the cash flag."
+        )
+
     with connection:
-        account = persistence.set_account_included_in_cash(connection, connection_id, account_id, include_in_cash)
+        stored = persistence.get_account(connection, connection_id, account_id)
 
-    if account is None:
-        raise UnknownAccountError(f"Unknown account {account_id} on connection {connection_id}.")
+        if stored is None:
+            raise UnknownAccountError(f"Unknown account {account_id} on connection {connection_id}.")
 
-    return account
+        display_name = (
+            stored.display_name if changes.display_name is None else resolve_display_name(changes.display_name)
+        )
+        description = stored.description if changes.description is None else resolve_description(changes.description)
+        include_in_cash = stored.include_in_cash if changes.include_in_cash is None else changes.include_in_cash
+        updated = replace(stored, display_name=display_name, description=description, include_in_cash=include_in_cash)
+        persistence.update_account(connection, updated)
+
+    return updated
 
 
 def upsert_account(
@@ -68,9 +97,10 @@ def upsert_account(
     connection_id: str,
     connection_name: str,
     fetched_at: str,
-) -> Account:
-    """Write the account and its balance row, and return what was stored.
+) -> None:
+    """Write the account and its balance row.
 
+    The upsert writes the fetched columns only, so a fetch can never undo a rename or a note.
     An account with no balance fails the fetch rather than being stored as zero: a zero would
     silently change the cash total and the net worth figure.
     """
@@ -84,6 +114,8 @@ def upsert_account(
         account_id=account.id,
         connection_name=connection_name,
         name=account.name,
+        display_name=None,
+        description=None,
         currency=account.currency,
         balance_cents=balance_cents,
         available_balance_cents=parse_cents(account.available_balance),
@@ -93,5 +125,3 @@ def upsert_account(
 
     persistence.upsert_account(connection, stored, fetched_at)
     persistence.upsert_account_balance(connection, stored, fetched_at)
-
-    return stored

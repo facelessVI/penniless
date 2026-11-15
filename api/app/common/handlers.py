@@ -12,7 +12,7 @@ from typing import cast
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.accounts.errors.accounts_errors import UnknownAccountError
+from app.accounts.errors.accounts_errors import AccountDescriptionError, AccountUpdateError, UnknownAccountError
 from app.categories.errors.categories_errors import (
     CategoryNameError,
     CategoryOrderError,
@@ -35,6 +35,8 @@ from app.transactions.errors.transactions_errors import InvalidDateRangeError
 # request the caller can fix; a 404 is a key that names nothing stored.
 DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     InvalidDateRangeError: 400,
+    AccountUpdateError: 400,
+    AccountDescriptionError: 400,
     CategoryRulesError: 400,
     CategoryNameError: 400,
     CategoryOrderError: 400,

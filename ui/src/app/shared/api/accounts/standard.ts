@@ -2,6 +2,9 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { AccountResponse, AccountUpdateContract } from "./model";
 
+/** Mirrors the API's cap, so the field can say the limit before a save is refused. */
+export const MAXIMUM_ACCOUNT_DESCRIPTION_LENGTH = 500;
+
 @Injectable({ providedIn: "root" })
 export class AccountsStandardService {
 	private readonly http = inject(HttpClient);
@@ -12,7 +15,7 @@ export class AccountsStandardService {
 		return this.http.get<AccountResponse[]>(url);
 	}
 
-	updateIncludeInCash(connectionId: number | string, accountId: number | string, contract: AccountUpdateContract) {
+	updateAccount(connectionId: number | string, accountId: number | string, contract: AccountUpdateContract) {
 		const url = `/api/accounts/${connectionId}/${accountId}`;
 		const body = contract;
 

@@ -50,8 +50,8 @@ ON CONFLICT (connection_id, account_id, transaction_id) DO UPDATE SET
 COUNT_TRANSACTIONS_SQL = "SELECT count(*) AS total FROM transactions"
 
 TRANSACTION_COLUMNS = """
-    t.connection_id, t.account_id, a.name AS account_name, t.transaction_id, t.posted_date,
-    t.description, t.category, t.amount_cents
+    t.connection_id, t.account_id, coalesce(a.display_name, a.name) AS account_name, t.transaction_id,
+    t.posted_date, t.description, t.category, t.amount_cents
 """
 
 TRANSACTION_FROM_SQL = """

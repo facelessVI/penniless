@@ -13,6 +13,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { ActivatedRoute } from "@angular/router";
 import { TransactionDialog, TransactionDialogData, TransactionDialogResult } from "@app/dialogs/transaction/transaction.dialog";
+import { resolvedAccountName } from "@shared/api/accounts/model";
 import { maskTypedDate } from "@shared/utils/date.util";
 import { DatePreset, PAGE_SIZE_OPTIONS, TransactionRow, TransactionsPageService } from "./transactions.service";
 
@@ -51,6 +52,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 	private isDestroyed = false;
 
 	protected readonly service = inject(TransactionsPageService);
+	protected readonly accountName = resolvedAccountName;
 	protected readonly rangeForm = new FormGroup({
 		start: new FormControl<Date | null>(null),
 		end: new FormControl<Date | null>(null),

@@ -1,4 +1,4 @@
-"""Account types that do not count as cash.
+"""Account values that are not SQL: the account types that do not count as cash, and the note's cap.
 
 The Bridge sends no account type for most institutions. When it does supply `extra.type`, only
 these are demoted out of the cash total; anything unknown or missing stays in, which keeps the
@@ -16,3 +16,5 @@ NON_CASH_ACCOUNT_TYPES = {
     "brokerage",
     "retirement",
 }
+
+DESCRIPTION_MAXIMUM_LENGTH = 500
