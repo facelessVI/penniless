@@ -20,6 +20,7 @@ from collections import Counter
 from collections.abc import Sequence
 
 from app.categories.constants.categories_constants import (
+    CATEGORY_NAME_RULE,
     KEYWORD_SOURCE_DESCRIPTION,
     KEYWORD_SOURCE_PHRASE,
     KEYWORD_SOURCE_RULE,
@@ -27,12 +28,10 @@ from app.categories.constants.categories_constants import (
     MATCH_TYPE_CONTAINS,
     MATCH_TYPE_EXACT,
     MATCH_TYPES,
-    MAXIMUM_CATEGORY_NAME_LENGTH,
     PROTECTED_CATEGORY_REASONS,
     UNCATEGORIZED_CATEGORY,
 )
 from app.categories.errors.categories_errors import (
-    CategoryNameError,
     CategoryOrderError,
     CategoryRulesError,
     ProtectedCategoryError,
@@ -276,24 +275,6 @@ def apply_rules(connection: sqlite3.Connection, rules: CategoryRules) -> ApplyRe
     return ApplyResult(updated=updated, uncategorized=uncategorized)
 
 
-def normalize_category_name(name: str) -> str:
-    """Trim the ends only: the spacing inside a name is what the user typed."""
-    normalized = name.strip()
-
-    if not normalized:
-        raise CategoryNameError("A category needs a name.")
-
-    if len(normalized) > MAXIMUM_CATEGORY_NAME_LENGTH:
-        raise CategoryNameError(f"A category name can be at most {MAXIMUM_CATEGORY_NAME_LENGTH} characters.")
-
-    # The management endpoints name a category in the path, where a slash would split the segment and
-    # turn a valid rename into a 404. Refusing it at the door is clearer than a route that cannot match.
-    if "/" in normalized:
-        raise CategoryNameError("A category name cannot contain a slash.")
-
-    return normalized
-
-
 def list_categories(connection: sqlite3.Connection) -> list[Category]:
     """Every category in display order, with how many transactions and rules currently carry it."""
     return persistence.get_categories_with_counts(connection)
@@ -301,7 +282,7 @@ def list_categories(connection: sqlite3.Connection) -> list[Category]:
 
 def create_category(connection: sqlite3.Connection, name: str) -> list[Category]:
     """Append a category to the end of the order."""
-    normalized = normalize_category_name(name)
+    normalized = CATEGORY_NAME_RULE.normalize(name)
     ensure_category_name_is_free(connection, normalized)
 
     with connection:
@@ -315,7 +296,7 @@ def rename_category(connection: sqlite3.Connection, name: str, new_name: str) ->
     ensure_category_exists(connection, name)
     ensure_category_is_editable(name)
 
-    normalized = normalize_category_name(new_name)
+    normalized = CATEGORY_NAME_RULE.normalize(new_name)
     ensure_category_name_is_free(connection, normalized, current_name=name)
 
     with connection:
@@ -395,10 +376,7 @@ def ensure_category_name_is_free(connection: sqlite3.Connection, name: str, curr
     """Case-insensitive, matching the unique index on the table."""
     stored_name = persistence.get_category_case_insensitive(connection, name)
 
-    if stored_name is None or stored_name == current_name:
-        return
-
-    raise CategoryNameError(f"{name!r} is already a category.")
+    CATEGORY_NAME_RULE.ensure_is_free(name, stored_name, current_name)
 
 
 def ensure_category_is_editable(name: str) -> None:
