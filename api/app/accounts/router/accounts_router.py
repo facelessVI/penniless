@@ -1,4 +1,4 @@
-"""Account list and the cash-total toggle."""
+"""The account list and the one endpoint that edits an account's metadata."""
 
 import sqlite3
 from typing import Annotated
@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 
 from app.accounts.api.accounts_api import AccountResponse, AccountUpdateRequest
 from app.accounts.converter import accounts_converter as converter
+from app.accounts.model.accounts_model import AccountChanges
 from app.accounts.service import accounts_service as service
 from app.common import db
 
@@ -25,6 +26,10 @@ def update_account(
     request: AccountUpdateRequest,
     connection: Annotated[sqlite3.Connection, Depends(db.get_connection)],
 ) -> AccountResponse:
-    return converter.to_account(
-        service.set_account_included_in_cash(connection, connection_id, account_id, request.include_in_cash)
+    changes = AccountChanges(
+        display_name=request.display_name,
+        description=request.description,
+        include_in_cash=request.include_in_cash,
     )
+
+    return converter.to_account(service.update_account(connection, connection_id, account_id, changes))

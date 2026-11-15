@@ -11,16 +11,17 @@ from app.accounts.model.accounts_model import Account
 from app.common import db
 
 ACCOUNT_COLUMNS = """
-    connection_id, account_id, connection_name, name, currency, balance_cents,
-    available_balance_cents, balance_date, include_in_cash
+    connection_id, account_id, connection_name, name, display_name, description, currency,
+    balance_cents, available_balance_cents, balance_date, include_in_cash
 """
 
-SELECT_ACCOUNTS_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts ORDER BY connection_name, name"
+SELECT_ACCOUNTS_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts ORDER BY connection_name, coalesce(display_name, name)"
 
 SELECT_ACCOUNT_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts WHERE connection_id = ? AND account_id = ?"
 
-UPDATE_INCLUDE_IN_CASH_SQL = """
-UPDATE accounts SET include_in_cash = ?, updated_at = ? WHERE connection_id = ? AND account_id = ?
+UPDATE_ACCOUNT_SQL = """
+UPDATE accounts SET display_name = ?, description = ?, include_in_cash = ?, updated_at = ?
+WHERE connection_id = ? AND account_id = ?
 """
 
 CASH_TOTAL_SQL = "SELECT coalesce(sum(balance_cents), 0) AS cash_total_cents FROM accounts WHERE include_in_cash = 1"
@@ -65,19 +66,19 @@ def get_account(connection: sqlite3.Connection, connection_id: str, account_id: 
     return None if row is None else Account.from_row(row)
 
 
-def set_account_included_in_cash(
-    connection: sqlite3.Connection, connection_id: str, account_id: str, include_in_cash: bool
-) -> Account | None:
-    """Write the toggle and return the updated account, or `None` when no account matched."""
-    cursor = connection.execute(
-        UPDATE_INCLUDE_IN_CASH_SQL,
-        (int(include_in_cash), db.now_iso(), connection_id, account_id),
+def update_account(connection: sqlite3.Connection, account: Account) -> None:
+    """Write the three editable columns of one account."""
+    connection.execute(
+        UPDATE_ACCOUNT_SQL,
+        (
+            account.display_name,
+            account.description,
+            int(account.include_in_cash),
+            db.now_iso(),
+            account.connection_id,
+            account.account_id,
+        ),
     )
-
-    if cursor.rowcount == 0:
-        return None
-
-    return get_account(connection, connection_id, account_id)
 
 
 def get_cash_total_cents(connection: sqlite3.Connection) -> int:

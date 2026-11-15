@@ -12,6 +12,8 @@ def to_account(account: Account) -> AccountResponse:
         account_id=account.account_id,
         connection_name=account.connection_name,
         name=account.name,
+        display_name=account.display_name,
+        description=account.description,
         currency=account.currency,
         balance_cents=account.balance_cents,
         available_balance_cents=account.available_balance_cents,
