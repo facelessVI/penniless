@@ -18,6 +18,7 @@ class Account:
     available_balance_cents: int | None
     balance_date: str
     include_in_cash: bool
+    labels: tuple[str, ...] = ()
 
     @staticmethod
     def from_row(row: sqlite3.Row) -> "Account":
@@ -40,12 +41,21 @@ class Account:
 
 @dataclass(frozen=True)
 class AccountChanges:
-    """The fields one update carries: `None` means the caller did not supply that field."""
+    """The fields one update carries: `None` means the caller did not supply that field.
+
+    `labels` is the account's complete set, not a delta: an empty tuple clears every label.
+    """
 
     display_name: str | None = None
     description: str | None = None
     include_in_cash: bool | None = None
+    labels: tuple[str, ...] | None = None
 
     @property
     def is_empty(self) -> bool:
-        return self.display_name is None and self.description is None and self.include_in_cash is None
+        return (
+            self.display_name is None
+            and self.description is None
+            and self.include_in_cash is None
+            and self.labels is None
+        )

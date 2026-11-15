@@ -1,4 +1,5 @@
-"""The account errors: a key that names no stored account, and an update that cannot be applied."""
+"""The account errors: a key that names no stored account, an update that cannot be applied, and a
+label name the vocabulary refuses."""
 
 
 class UnknownAccountError(Exception):
@@ -11,3 +12,7 @@ class AccountUpdateError(Exception):
 
 class AccountDescriptionError(Exception):
     """A description past the length a note may have."""
+
+
+class LabelNameError(ValueError):
+    """A label name is blank, too long, carries a slash, or appears twice in one set."""

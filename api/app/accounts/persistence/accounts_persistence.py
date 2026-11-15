@@ -55,6 +55,31 @@ ON CONFLICT (connection_id, account_id, balance_date) DO UPDATE SET
 
 COUNT_ACCOUNTS_SQL = "SELECT count(*) AS total FROM accounts"
 
+SELECT_LABELS_SQL = """
+SELECT label FROM account_labels
+WHERE connection_id = ? AND account_id = ?
+ORDER BY label COLLATE NOCASE, label
+"""
+
+SELECT_LABELS_BY_ACCOUNT_SQL = """
+SELECT connection_id, account_id, label FROM account_labels
+ORDER BY connection_id, account_id, label COLLATE NOCASE, label
+"""
+
+SELECT_LABEL_SQL = "SELECT name FROM labels WHERE name = ? COLLATE NOCASE"
+
+INSERT_LABEL_SQL = "INSERT INTO labels (name) VALUES (?) ON CONFLICT DO NOTHING"
+
+INSERT_ACCOUNT_LABEL_SQL = """
+INSERT INTO account_labels (connection_id, account_id, label, created_at) VALUES (?, ?, ?, ?)
+"""
+
+DELETE_ACCOUNT_LABELS_SQL = "DELETE FROM account_labels WHERE connection_id = ? AND account_id = ?"
+
+DELETE_ORPHAN_LABELS_SQL = """
+DELETE FROM labels WHERE NOT EXISTS (SELECT 1 FROM account_labels WHERE account_labels.label = labels.name)
+"""
+
 
 def get_accounts(connection: sqlite3.Connection) -> list[Account]:
     return [Account.from_row(row) for row in connection.execute(SELECT_ACCOUNTS_SQL)]
@@ -91,6 +116,46 @@ def get_net_worth_cents(connection: sqlite3.Connection) -> int:
 
 def count_accounts(connection: sqlite3.Connection) -> int:
     return int(connection.execute(COUNT_ACCOUNTS_SQL).fetchone()["total"])
+
+
+def get_account_labels(connection: sqlite3.Connection, connection_id: str, account_id: str) -> tuple[str, ...]:
+    rows = connection.execute(SELECT_LABELS_SQL, (connection_id, account_id))
+
+    return tuple(str(row["label"]) for row in rows)
+
+
+def get_labels_by_account(connection: sqlite3.Connection) -> dict[tuple[str, str], tuple[str, ...]]:
+    """Every assignment at once, in the order each account reports its labels."""
+    labels: dict[tuple[str, str], list[str]] = {}
+
+    for row in connection.execute(SELECT_LABELS_BY_ACCOUNT_SQL):
+        labels.setdefault((str(row["connection_id"]), str(row["account_id"])), []).append(str(row["label"]))
+
+    return {key: tuple(names) for key, names in labels.items()}
+
+
+def get_label_case_insensitive(connection: sqlite3.Connection, name: str) -> str | None:
+    row = connection.execute(SELECT_LABEL_SQL, (name,)).fetchone()
+
+    return None if row is None else str(row["name"])
+
+
+def insert_label(connection: sqlite3.Connection, name: str) -> None:
+    connection.execute(INSERT_LABEL_SQL, (name,))
+
+
+def insert_account_label(
+    connection: sqlite3.Connection, connection_id: str, account_id: str, label: str, created_at: str
+) -> None:
+    connection.execute(INSERT_ACCOUNT_LABEL_SQL, (connection_id, account_id, label, created_at))
+
+
+def delete_account_labels(connection: sqlite3.Connection, connection_id: str, account_id: str) -> None:
+    connection.execute(DELETE_ACCOUNT_LABELS_SQL, (connection_id, account_id))
+
+
+def delete_orphan_labels(connection: sqlite3.Connection) -> None:
+    connection.execute(DELETE_ORPHAN_LABELS_SQL)
 
 
 def upsert_account(connection: sqlite3.Connection, account: Account, fetched_at: str) -> None:
