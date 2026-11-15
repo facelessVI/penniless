@@ -16,6 +16,7 @@ export const routes: Routes = [
 			{ path: "", redirectTo: "dashboard", pathMatch: "full" },
 			{ path: "dashboard", component: DashboardPage },
 			{ path: "transactions", component: TransactionsPage },
+			{ path: "settings/accounts/:connectionId/:accountId", component: SettingsAccountsPage },
 			{ path: "settings/accounts", component: SettingsAccountsPage },
 			{ path: "settings/categories", component: SettingsCategoriesPage },
 			{ path: "settings/data", component: SettingsDataPage },

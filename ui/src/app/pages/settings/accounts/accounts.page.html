@@ -5,8 +5,8 @@
 		<div class="page-heading">
 			<h1>Accounts</h1>
 			<p class="page-hint">
-				Every account SimpleFIN has stored. Give one your own name, write down what it is for, or group it with a few labels; a fetch never overwrites
-				any of them.
+				Every account SimpleFIN has stored. Give one your own name, write down what it is for, group it with a few labels, or say whether it counts as
+				cash; a fetch never overwrites any of them.
 			</p>
 		</div>
 
@@ -29,16 +29,29 @@
 			@for (account of accounts; track accountKey(account)) {
 				@let form = service.formFor(account);
 
-				<mat-expansion-panel class="account-panel" [expanded]="isExpanded(account)" (expandedChange)="setExpanded(account, $event)">
+				<mat-expansion-panel
+					class="account-panel"
+					[attr.data-account-key]="accountKey(account)"
+					[expanded]="isExpanded(account)"
+					(expandedChange)="setExpanded(account, $event)"
+				>
 					<mat-expansion-panel-header>
 						<mat-panel-title class="panel-heading">
 							<span class="panel-name">{{ accountName(account) }}</span>
 							<span class="panel-connection">{{ account.connectionName }}</span>
 
-							@if (!isExpanded(account) && account.labels.length > 0) {
-								<span class="label-chips" role="list" [attr.aria-label]="'Labels for ' + accountName(account)">
-									@for (label of account.labels; track label) {
-										<span class="label-chip" role="listitem">{{ label }}</span>
+							@if (!isExpanded(account) && (account.includeInCash || account.labels.length > 0)) {
+								<span class="panel-tags">
+									@if (account.includeInCash) {
+										<span class="cash-chip">Cash</span>
+									}
+
+									@if (account.labels.length > 0) {
+										<span class="label-chips" role="list" [attr.aria-label]="'Labels for ' + accountName(account)">
+											@for (label of account.labels; track label) {
+												<span class="label-chip" role="listitem">{{ label }}</span>
+											}
+										</span>
 									}
 								</span>
 							}
@@ -73,7 +86,7 @@
 												mat-icon-button
 												type="button"
 												class="label-chip-remove"
-												[disabled]="service.isSavingLabels(account)"
+												[disabled]="service.isWriting(account)"
 												[attr.aria-label]="'Remove label ' + label"
 												(click)="onDetachLabel(account, label)"
 											>
@@ -96,6 +109,20 @@
 								</mat-autocomplete>
 								<mat-hint>Pick a label already in use, or type a new name and press Enter.</mat-hint>
 							</mat-form-field>
+						</div>
+
+						<div class="cash-toggle">
+							<mat-slide-toggle
+								[checked]="account.includeInCash"
+								[disabled]="service.isWriting(account)"
+								(change)="onCashToggle(account, $event.checked)"
+							>
+								Counts as cash
+							</mat-slide-toggle>
+							<p class="cash-hint">
+								Accounts arrive counting as cash, because the institution rarely says what kind of account it is. Turn this off for credit cards and
+								brokerages: they leave the dashboard's cash total, though net worth still sums every account.
+							</p>
 						</div>
 
 						<div class="panel-actions">

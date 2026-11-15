@@ -1,16 +1,15 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation, computed, inject } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
-import { AccountResponse, resolvedAccountName } from "@shared/api/accounts/model";
+import { resolvedAccountName } from "@shared/api/accounts/model";
 import { DashboardPageService, DashboardSortColumn, DashboardSortDirection } from "./dashboard.service";
 
 @Component({
 	selector: "penniless-dashboard",
-	imports: [DatePipe, RouterLink, MatButtonModule, MatSlideToggleModule, MatSortModule, MatTableModule],
+	imports: [DatePipe, RouterLink, MatButtonModule, MatSortModule, MatTableModule],
 	templateUrl: "./dashboard.page.html",
 	styleUrl: "./dashboard.page.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -19,7 +18,7 @@ import { DashboardPageService, DashboardSortColumn, DashboardSortDirection } fro
 export class DashboardPage implements OnInit, OnDestroy {
 	protected readonly service = inject(DashboardPageService);
 	protected readonly accountName = resolvedAccountName;
-	protected readonly accountColumns = ["name", "connection", "balance", "cash"];
+	protected readonly accountColumns = ["name", "connection", "balance"];
 
 	protected readonly refreshBlockedReason = computed(() => {
 		const status = this.service.status();
@@ -39,10 +38,6 @@ export class DashboardPage implements OnInit, OnDestroy {
 
 	ngOnDestroy(): void {
 		this.service.reset();
-	}
-
-	protected onCashToggle(account: AccountResponse, includeInCash: boolean): void {
-		this.service.setIncludeInCash(account, includeInCash);
 	}
 
 	protected onSortChange(event: Sort): void {

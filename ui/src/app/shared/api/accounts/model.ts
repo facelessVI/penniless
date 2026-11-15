@@ -23,4 +23,6 @@ export interface AccountUpdateContract {
 
 export const resolvedAccountName = (account: AccountResponse): string => account.displayName ?? account.name;
 
-export const accountKey = (account: AccountResponse): string => `${account.connectionId}/${account.accountId}`;
+export const accountKeyOf = (connectionId: string, accountId: string): string => `${connectionId}/${accountId}`;
+
+export const accountKey = (account: AccountResponse): string => accountKeyOf(account.connectionId, account.accountId);

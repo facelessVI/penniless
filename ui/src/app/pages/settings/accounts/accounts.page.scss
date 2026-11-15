@@ -68,8 +68,27 @@ penniless-settings-accounts {
 		font: var(--mat-sys-body-small);
 	}
 
-	.panel-heading .label-chips {
+	.panel-heading .panel-tags {
 		margin-top: 0.25rem;
+	}
+
+	.panel-tags {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.cash-chip {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.05rem 0.45rem;
+		border: 1px solid var(--border);
+		border-radius: var(--mat-sys-corner-full);
+		color: var(--text-muted);
+		font: var(--mat-sys-label-small);
+		line-height: 1.4;
+		white-space: nowrap;
 	}
 
 	.label-editor {
@@ -100,6 +119,19 @@ penniless-settings-accounts {
 			width: 0.85rem;
 			height: 0.85rem;
 		}
+	}
+
+	.cash-toggle {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.cash-hint {
+		margin: 0;
+		max-width: 34rem;
+		color: var(--text-muted);
+		font: var(--mat-sys-body-small);
 	}
 
 	.panel-body {

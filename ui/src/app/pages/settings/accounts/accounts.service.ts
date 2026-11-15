@@ -45,10 +45,10 @@ export class AccountsPageService {
 
 	readonly accounts = signal<AccountResponse[]>([]);
 	readonly loading = signal(true);
-	/** The account whose save is in flight, so only that panel's Save button is disabled. */
+	/** The account whose form save is in flight, so only that panel's Save button is disabled. */
 	readonly savingKey = signal<string | null>(null);
-	/** The accounts whose label write is in flight, so only their own chip controls wait. */
-	readonly labelsBusyKeys = signal<ReadonlySet<string>>(new Set());
+	/** The accounts whose immediate write is in flight, so only their own switches wait. */
+	readonly writingKeys = signal<ReadonlySet<string>>(new Set());
 
 	load(): void {
 		this.loading.set(true);
@@ -136,14 +136,14 @@ export class AccountsPageService {
 		return matching.filter(([key]) => !attached.has(key)).map(([, label]) => ({ value: label, create: false }));
 	}
 
-	isSavingLabels(account: AccountResponse): boolean {
-		return this.labelsBusyKeys().has(accountKey(account));
+	isWriting(account: AccountResponse): boolean {
+		return this.writingKeys().has(accountKey(account));
 	}
 
 	attachLabel(account: AccountResponse, name: string): void {
 		const trimmed = name.trim();
 
-		if (trimmed === "" || this.isSavingLabels(account)) {
+		if (trimmed === "" || this.isWriting(account)) {
 			return;
 		}
 
@@ -151,7 +151,7 @@ export class AccountsPageService {
 	}
 
 	detachLabel(account: AccountResponse, label: string): void {
-		if (this.isSavingLabels(account)) {
+		if (this.isWriting(account)) {
 			return;
 		}
 
@@ -159,6 +159,25 @@ export class AccountsPageService {
 			account,
 			account.labels.filter((candidate) => candidate !== label),
 		);
+	}
+
+	setIncludeInCash(account: AccountResponse, includeInCash: boolean): void {
+		if (this.isWriting(account)) {
+			return;
+		}
+
+		const key = accountKey(account);
+
+		this.setWriting(key, true);
+
+		this.apiClient.accounts.standard.updateAccount(account.connectionId, account.accountId, { includeInCash }).subscribe({
+			next: (updated) => {
+				this.replaceAccount(updated);
+				this.setWriting(key, false);
+			},
+			// The banner has already reported it; the switch keeps what the user picked, so a retry is one more click.
+			error: () => this.setWriting(key, false),
+		});
 	}
 
 	save(account: AccountResponse): void {
@@ -170,7 +189,7 @@ export class AccountsPageService {
 
 		this.apiClient.accounts.standard.updateAccount(account.connectionId, account.accountId, contract).subscribe({
 			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (accountKey(candidate) === accountKey(updated) ? updated : candidate)));
+				this.replaceAccount(updated);
 				form.setValue(toFormValue(updated));
 				this.savingKey.set(null);
 			},
@@ -184,31 +203,35 @@ export class AccountsPageService {
 		this.forms.clear();
 		this.labelInputs.clear();
 		this.savingKey.set(null);
-		this.labelsBusyKeys.set(new Set());
+		this.writingKeys.set(new Set());
 		this.loading.set(true);
 	}
 
 	private writeLabels(account: AccountResponse, labels: string[]): void {
 		const key = accountKey(account);
 
-		this.setLabelsBusy(key, true);
+		this.setWriting(key, true);
 
 		this.apiClient.accounts.standard.updateAccount(account.connectionId, account.accountId, { labels }).subscribe({
 			next: (updated) => {
-				this.accounts.update((accounts) => accounts.map((candidate) => (accountKey(candidate) === accountKey(updated) ? updated : candidate)));
+				this.replaceAccount(updated);
 				this.labelInputFor(updated).setValue("");
-				this.setLabelsBusy(key, false);
+				this.setWriting(key, false);
 			},
 			// The banner has already reported it, and the panel keeps the labels it had.
-			error: () => this.setLabelsBusy(key, false),
+			error: () => this.setWriting(key, false),
 		});
 	}
 
-	private setLabelsBusy(key: string, busy: boolean): void {
-		this.labelsBusyKeys.update((keys) => {
+	private replaceAccount(updated: AccountResponse): void {
+		this.accounts.update((accounts) => accounts.map((candidate) => (accountKey(candidate) === accountKey(updated) ? updated : candidate)));
+	}
+
+	private setWriting(key: string, writing: boolean): void {
+		this.writingKeys.update((keys) => {
 			const next = new Set(keys);
 
-			if (busy) {
+			if (writing) {
 				next.add(key);
 			} else {
 				next.delete(key);
