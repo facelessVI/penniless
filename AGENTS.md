@@ -1,0 +1,17 @@
+# penniless
+
+Local-only personal finance dashboard. `api/` is FastAPI, `ui/` is the frontend.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues on `facelessVI/penniless`, driven with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
