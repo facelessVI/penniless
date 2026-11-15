@@ -108,6 +108,13 @@ penniless-dashboard {
 	.accounts-table {
 		width: 100%;
 
+		.account-cell {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.4rem;
+		}
+
 		.cell-muted {
 			color: var(--text-muted);
 		}

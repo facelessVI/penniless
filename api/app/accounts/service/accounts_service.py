@@ -6,13 +6,24 @@ so a router only ever reads its request and answers with whatever this module re
 """
 
 import sqlite3
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
-from app.accounts.constants.accounts_constants import DESCRIPTION_MAXIMUM_LENGTH, NON_CASH_ACCOUNT_TYPES
-from app.accounts.errors.accounts_errors import AccountDescriptionError, AccountUpdateError, UnknownAccountError
+from app.accounts.constants.accounts_constants import (
+    DESCRIPTION_MAXIMUM_LENGTH,
+    LABEL_NAME_RULE,
+    NON_CASH_ACCOUNT_TYPES,
+)
+from app.accounts.errors.accounts_errors import (
+    AccountDescriptionError,
+    AccountUpdateError,
+    LabelNameError,
+    UnknownAccountError,
+)
 from app.accounts.model.accounts_model import Account, AccountChanges
 from app.accounts.persistence import accounts_persistence as persistence
+from app.common import db
 from app.common.dates import local_date
 from app.common.errors import SimpleFinError
 from app.common.money import parse_cents
@@ -46,8 +57,47 @@ def infer_include_in_cash(extra: dict[str, Any]) -> bool:
 
 
 def list_accounts(connection: sqlite3.Connection) -> list[Account]:
-    """Every stored account, ordered by connection then resolved name."""
-    return persistence.get_accounts(connection)
+    """Every stored account, ordered by connection then resolved name, each with its own labels."""
+    labels_by_account = persistence.get_labels_by_account(connection)
+
+    return [
+        replace(account, labels=labels_by_account.get((account.connection_id, account.account_id), ()))
+        for account in persistence.get_accounts(connection)
+    ]
+
+
+def replace_labels(connection: sqlite3.Connection, account: Account, labels: Sequence[str]) -> tuple[str, ...]:
+    """Write `labels` as the account's complete set: create unknown names and prune labels nobody carries.
+
+    A known name keeps the spelling already stored, so one vocabulary never grows two casings of the
+    same grouping. Every name is validated before the first write, and the service's transaction holds
+    the replacement, so a refused set leaves the account as it was.
+    """
+    normalized = [LABEL_NAME_RULE.normalize(label) for label in labels]
+    seen: set[str] = set()
+
+    for label in normalized:
+        if label.casefold() in seen:
+            raise LabelNameError(f"The label {label!r} is attached twice.")
+
+        seen.add(label.casefold())
+
+    resolved = []
+
+    for label in normalized:
+        stored = persistence.get_label_case_insensitive(connection, label)
+        resolved.append(label if stored is None else stored)
+
+    created_at = db.now_iso()
+    persistence.delete_account_labels(connection, account.connection_id, account.account_id)
+
+    for label in resolved:
+        persistence.insert_label(connection, label)
+        persistence.insert_account_label(connection, account.connection_id, account.account_id, label, created_at)
+
+    persistence.delete_orphan_labels(connection)
+
+    return persistence.get_account_labels(connection, account.connection_id, account.account_id)
 
 
 def resolve_display_name(display_name: str) -> str | None:
@@ -85,7 +135,14 @@ def update_account(
         )
         description = stored.description if changes.description is None else resolve_description(changes.description)
         include_in_cash = stored.include_in_cash if changes.include_in_cash is None else changes.include_in_cash
-        updated = replace(stored, display_name=display_name, description=description, include_in_cash=include_in_cash)
+        labels = stored.labels if changes.labels is None else replace_labels(connection, stored, changes.labels)
+        updated = replace(
+            stored,
+            display_name=display_name,
+            description=description,
+            include_in_cash=include_in_cash,
+            labels=labels,
+        )
         persistence.update_account(connection, updated)
 
     return updated

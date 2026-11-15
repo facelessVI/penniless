@@ -19,6 +19,7 @@ def to_account(account: Account) -> AccountResponse:
         available_balance_cents=account.available_balance_cents,
         balance_date=account.balance_date,
         include_in_cash=account.include_in_cash,
+        labels=list(account.labels),
     )
 
 

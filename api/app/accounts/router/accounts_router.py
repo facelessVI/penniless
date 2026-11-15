@@ -30,6 +30,7 @@ def update_account(
         display_name=request.display_name,
         description=request.description,
         include_in_cash=request.include_in_cash,
+        labels=None if request.labels is None else tuple(request.labels),
     )
 
     return converter.to_account(service.update_account(connection, connection_id, account_id, changes))

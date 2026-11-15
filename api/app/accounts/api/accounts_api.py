@@ -15,9 +15,11 @@ class AccountResponse(ApiModel):
     available_balance_cents: int | None
     balance_date: str
     include_in_cash: bool
+    labels: list[str]
 
 
 class AccountUpdateRequest(ApiModel):
     display_name: str | None = None
     description: str | None = None
     include_in_cash: bool | None = None
+    labels: list[str] | None = None

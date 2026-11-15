@@ -76,7 +76,18 @@
 			<table mat-table [dataSource]="service.accountRows()" class="accounts-table" matSort (matSortChange)="onSortChange($event)">
 				<ng-container matColumnDef="name">
 					<th mat-header-cell *matHeaderCellDef>Account</th>
-					<td mat-cell *matCellDef="let account">{{ accountName(account) }}</td>
+					<td mat-cell *matCellDef="let account">
+						<span class="account-cell">
+							<span>{{ accountName(account) }}</span>
+							@if (account.labels.length > 0) {
+								<span class="label-chips" role="list" [attr.aria-label]="'Labels for ' + accountName(account)">
+									@for (label of account.labels; track label) {
+										<span class="label-chip" role="listitem">{{ label }}</span>
+									}
+								</span>
+							}
+						</span>
+					</td>
 				</ng-container>
 
 				<ng-container matColumnDef="connection">

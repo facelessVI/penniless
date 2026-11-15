@@ -10,12 +10,15 @@ export interface AccountResponse {
 	availableBalanceCents: number | null;
 	balanceDate: string;
 	includeInCash: boolean;
+	labels: string[];
 }
 
 export interface AccountUpdateContract {
 	displayName?: string;
 	description?: string;
 	includeInCash?: boolean;
+	/** The account's complete set, not a delta. */
+	labels?: string[];
 }
 
 export const resolvedAccountName = (account: AccountResponse): string => account.displayName ?? account.name;

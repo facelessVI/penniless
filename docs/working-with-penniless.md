@@ -91,21 +91,30 @@ SimpleFIN allows **24 `/accounts` calls per day** per access URL, and every fetc
 ## Managing accounts
 
 **Settings** -> **Accounts** (the gear at the right of the top nav, `/settings/accounts`) is where an
-account gets the name and the note you recognize it by. There is no file to edit.
+account gets the name, the note and the labels you recognize it by. There is no file to edit.
 
 - The page lists every stored account as an expansion panel. A closed panel shows the name the app
-  uses for the account and the connection it came from; several panels can be open at once, and the
-  button at the top right reads **Expand all** or **Collapse all** depending on where things stand.
-- Open a panel to edit the **Display name** and the **Description**. The hint under the name field is
-  what the institution calls the account, so you can always see what you renamed.
-- **Save** writes both fields and is disabled until one of them differs from what was loaded. Leaving
-  the name blank hands the account back to the institution's name; leaving the description blank
-  empties it. The description holds up to 500 characters.
+  uses for the account, the connection it came from and the labels it carries as chips; several panels
+  can be open at once, and the button at the top right reads **Expand all** or **Collapse all**
+  depending on where things stand.
+- Open a panel to edit the **Display name**, the **Description** and its **Labels**. The hint under the
+  name field is what the institution calls the account, so you can always see what you renamed.
+- **Save** writes the name and the description and is disabled until one of them differs from what was
+  loaded. Leaving the name blank hands the account back to the institution's name; leaving the
+  description blank empties it. The description holds up to 500 characters.
+- **Labels** attach and detach immediately: they are switches rather than saved fields. Each chip has
+  a remove control, and the **Add a label** input autocompletes every label already in use. Typing a
+  new name and pressing Enter creates that label and attaches it in one step. A label that no account
+  carries any more disappears from the list, so the vocabulary cannot fill up with typos.
+- A label name is trimmed, may not be blank or contain a slash, may be at most 40 characters, and is
+  compared case-insensitively: attaching `retirement` when `Retirement` exists reuses the existing
+  spelling.
 - A saved name is the name everywhere: the dashboard, the Transactions account filter and account
-  column, and the order accounts are listed in. A fetch never touches the name or the description,
-  only the balance and the institution's own name.
-- The dashboard's **Counts as cash** toggle writes through the same endpoint, so it changes nothing
-  about the name or the description.
+  column, and the order accounts are listed in. A fetch never touches the name, the description or the
+  labels, only the balance and the institution's own name.
+- The dashboard shows each account's labels as wrapping chips after its name. The dashboard's
+  **Counts as cash** toggle writes through the same endpoint, so it changes nothing about the name,
+  the description or the labels.
 
 ## Managing categories
 
