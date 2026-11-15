@@ -68,6 +68,40 @@ penniless-settings-accounts {
 		font: var(--mat-sys-body-small);
 	}
 
+	.panel-heading .label-chips {
+		margin-top: 0.25rem;
+	}
+
+	.label-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.label-editor-title {
+		color: var(--text-muted);
+		font: var(--mat-sys-label-medium);
+	}
+
+	.label-field {
+		max-width: 20rem;
+	}
+
+	.label-chip-remove {
+		--mat-icon-button-icon-size: 14px;
+		--mat-icon-button-state-layer-size: 24px;
+		width: 1.5rem;
+		height: 1.5rem;
+		padding: 0;
+		margin-right: -0.35rem;
+		color: var(--text-muted);
+
+		svg {
+			width: 0.85rem;
+			height: 0.85rem;
+		}
+	}
+
 	.panel-body {
 		display: flex;
 		flex-direction: column;

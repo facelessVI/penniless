@@ -5,7 +5,8 @@
 		<div class="page-heading">
 			<h1>Accounts</h1>
 			<p class="page-hint">
-				Every account SimpleFIN has stored. Give one your own name, or write down what it is for; a fetch never overwrites either.
+				Every account SimpleFIN has stored. Give one your own name, write down what it is for, or group it with a few labels; a fetch never overwrites
+				any of them.
 			</p>
 		</div>
 
@@ -33,6 +34,14 @@
 						<mat-panel-title class="panel-heading">
 							<span class="panel-name">{{ accountName(account) }}</span>
 							<span class="panel-connection">{{ account.connectionName }}</span>
+
+							@if (!isExpanded(account) && account.labels.length > 0) {
+								<span class="label-chips" role="list" [attr.aria-label]="'Labels for ' + accountName(account)">
+									@for (label of account.labels; track label) {
+										<span class="label-chip" role="listitem">{{ label }}</span>
+									}
+								</span>
+							}
 						</mat-panel-title>
 					</mat-expansion-panel-header>
 
@@ -51,6 +60,43 @@
 								<mat-error>A description can be at most {{ maximumDescriptionLength }} characters.</mat-error>
 							}
 						</mat-form-field>
+
+						<div class="label-editor">
+							<span class="label-editor-title">Labels</span>
+
+							@if (account.labels.length > 0) {
+								<div class="label-chips" role="list" [attr.aria-label]="'Labels for ' + accountName(account)">
+									@for (label of account.labels; track label) {
+										<span class="label-chip" role="listitem">
+											{{ label }}
+											<button
+												mat-icon-button
+												type="button"
+												class="label-chip-remove"
+												[disabled]="service.isSavingLabels(account)"
+												[attr.aria-label]="'Remove label ' + label"
+												(click)="onDetachLabel(account, label)"
+											>
+												<svg viewBox="0 0 24 24" aria-hidden="true">
+													<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+												</svg>
+											</button>
+										</span>
+									}
+								</div>
+							}
+
+							<mat-form-field appearance="outline" subscriptSizing="dynamic" class="label-field">
+								<mat-label>Add a label</mat-label>
+								<input matInput [formControl]="service.labelInputFor(account)" [matAutocomplete]="labelAuto" />
+								<mat-autocomplete #labelAuto="matAutocomplete" [autoActiveFirstOption]="true" (optionSelected)="onLabelSelected(account, $event)">
+									@for (option of service.labelOptionsFor(account); track option.value) {
+										<mat-option [value]="option.value">{{ option.create ? 'Create "' + option.value + '"' : option.value }}</mat-option>
+									}
+								</mat-autocomplete>
+								<mat-hint>Pick a label already in use, or type a new name and press Enter.</mat-hint>
+							</mat-form-field>
+						</div>
 
 						<div class="panel-actions">
 							<button mat-flat-button type="submit" [disabled]="!canSave(account)">Save</button>

@@ -124,6 +124,27 @@ th.money {
 	white-space: nowrap;
 }
 
+/* Label chips render the shared label vocabulary wherever an account is shown. */
+.label-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+.label-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.1rem;
+	padding: 0.05rem 0.45rem;
+	border: 1px solid var(--border);
+	border-radius: var(--mat-sys-corner-full);
+	background: var(--surface-raised);
+	color: var(--text-muted);
+	font: var(--mat-sys-label-small);
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
 /* A drag preview lives in the top layer, outside the page that started the drag, so its styles
    cannot be scoped to that page. */
 .category-drag-preview {

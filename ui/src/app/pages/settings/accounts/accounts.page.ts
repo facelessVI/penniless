@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation, computed, inject, signal } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -11,7 +12,7 @@ import { AccountsPageService } from "./accounts.service";
 
 @Component({
 	selector: "penniless-settings-accounts",
-	imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
+	imports: [ReactiveFormsModule, RouterLink, MatAutocompleteModule, MatButtonModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
 	templateUrl: "./accounts.page.html",
 	styleUrl: "./accounts.page.scss",
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,5 +77,13 @@ export class SettingsAccountsPage implements OnInit, OnDestroy {
 		}
 
 		this.service.save(account);
+	}
+
+	protected onLabelSelected(account: AccountResponse, event: MatAutocompleteSelectedEvent): void {
+		this.service.attachLabel(account, String(event.option.value));
+	}
+
+	protected onDetachLabel(account: AccountResponse, label: string): void {
+		this.service.detachLabel(account, label);
 	}
 }
