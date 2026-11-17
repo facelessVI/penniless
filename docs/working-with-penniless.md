@@ -91,7 +91,7 @@ SimpleFIN allows **24 `/accounts` calls per day** per access URL, and every fetc
 
 ## Managing accounts
 
-**Settings** -> **Accounts** (the gear at the right of the top nav, `/settings/accounts`) is where an
+**Settings** -> **Accounts** (the Settings group in the left sidebar, `/settings/accounts`) is where an
 account gets the name, the note, the labels you recognize it by and whether it counts as cash. There
 is no file to edit.
 
@@ -132,7 +132,7 @@ Categories and rules live in SQLite, in two tables: `categories` (the closed lis
 that is the order the selects show) and `rules` (one row per exact transaction description). There is
 no file to edit.
 
-- **Settings** -> **Categories** (the gear at the right of the top nav, `/settings/categories`) is
+- **Settings** -> **Categories** (the Settings group in the left sidebar, `/settings/categories`) is
   where categories are managed. The page lists every category in the order the selects show them,
   with how many transactions and rules currently carry it.
     - **Create category** opens a dialog with one name field and appends the category to the end of
@@ -174,7 +174,7 @@ no file to edit.
 
 ## Managing data
 
-**Settings** -> **Data** (the gear at the right of the top nav, `/settings/data`) describes what this
+**Settings** -> **Data** (the Settings group in the left sidebar, `/settings/data`) describes what this
 machine currently holds and holds the two actions that rewrite it. Connecting stays on **Setup**, and
 fetches of new postings stay on the dashboard's **Refresh**.
 

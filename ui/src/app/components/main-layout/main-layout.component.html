@@ -1,49 +1,91 @@
-<header class="top-nav">
-	<div class="top-nav-inner">
-		<a class="top-nav-brand" routerLink="/dashboard">
+<aside class="sidebar" [class.collapsed]="layoutService.sidebarCollapsed()">
+	<a class="sidebar-brand" routerLink="/dashboard" aria-label="Penniless dashboard">
+		@if (layoutService.sidebarCollapsed()) {
+			<img class="sidebar-brand-logo" src="/brand/penniless-character.svg" alt="" />
+		} @else {
 			<picture>
 				<source srcset="/brand/penniless-horizontal-dark.svg" media="(prefers-color-scheme: dark)" />
-				<img class="top-nav-logo" src="/brand/penniless-horizontal.svg" alt="Penniless" />
+				<img class="sidebar-brand-logo" src="/brand/penniless-horizontal.svg" alt="" />
 			</picture>
-		</a>
+		}
+	</a>
 
-		<nav class="top-nav-links">
-			@for (link of links; track link.route) {
-				<a [routerLink]="link.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{
-					link.label
-				}}</a>
-			}
-		</nav>
+	<nav class="sidebar-nav" aria-label="Pages">
+		@for (link of links; track link.route) {
+			<a
+				class="sidebar-item"
+				[routerLink]="link.route"
+				routerLinkActive="active"
+				ariaCurrentWhenActive="page"
+				[matTooltip]="link.label"
+				[matTooltipDisabled]="!layoutService.sidebarCollapsed()"
+				matTooltipPosition="right"
+			>
+				<app-main-layout-nav-icon [icon]="link.icon" />
+				<span class="sidebar-item-label">{{ link.label }}</span>
+			</a>
+		}
+	</nav>
 
-		<button class="top-nav-settings" mat-icon-button type="button" aria-label="Settings" [matMenuTriggerFor]="settingsMenu">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<circle cx="12" cy="12" r="3" />
-				<path
-					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-				/>
-			</svg>
-		</button>
+	<nav class="sidebar-nav sidebar-settings" aria-label="Settings">
+		<p class="sidebar-section-label">Settings</p>
 
-		<mat-menu #settingsMenu="matMenu" xPosition="before">
-			<button mat-menu-item type="button" routerLink="/settings/accounts">Accounts</button>
-			<button mat-menu-item type="button" routerLink="/settings/categories">Categories</button>
-			<button mat-menu-item type="button" routerLink="/settings/data">Data</button>
-		</mat-menu>
-	</div>
-</header>
+		@for (link of settingsLinks; track link.route) {
+			<a
+				class="sidebar-item"
+				[routerLink]="link.route"
+				routerLinkActive="active"
+				ariaCurrentWhenActive="page"
+				[matTooltip]="link.label"
+				[matTooltipDisabled]="!layoutService.sidebarCollapsed()"
+				matTooltipPosition="right"
+			>
+				<app-main-layout-nav-icon [icon]="link.icon" />
+				<span class="sidebar-item-label">{{ link.label }}</span>
+			</a>
+		}
+	</nav>
 
-@if (errorService.activeError(); as error) {
-	<div class="error-banner" role="alert">
-		<span class="error-banner-message">{{ error.message }}</span>
+	<button
+		class="sidebar-toggle"
+		mat-icon-button
+		type="button"
+		(click)="layoutService.toggleSidebar()"
+		[attr.aria-label]="layoutService.sidebarCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
+		[matTooltip]="layoutService.sidebarCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
+		matTooltipPosition="right"
+	>
+		<svg
+			class="sidebar-toggle-icon"
+			viewBox="0 0 24 24"
+			width="16"
+			height="16"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M15 6l-6 6 6 6" />
+		</svg>
+	</button>
+</aside>
 
-		<button class="error-banner-dismiss" type="button" aria-label="Dismiss error" (click)="errorService.clearError()">
-			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-				<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-			</svg>
-		</button>
-	</div>
-}
+<div class="content-column">
+	@if (errorService.activeError(); as error) {
+		<div class="error-banner" role="alert">
+			<span class="error-banner-message">{{ error.message }}</span>
 
-<main class="content">
-	<router-outlet />
-</main>
+			<button class="error-banner-dismiss" type="button" aria-label="Dismiss error" (click)="errorService.clearError()">
+				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+					<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+				</svg>
+			</button>
+		</div>
+	}
+
+	<main class="content">
+		<router-outlet />
+	</main>
+</div>
