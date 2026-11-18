@@ -1,5 +1,5 @@
-"""The account errors: a key that names no stored account, an update that cannot be applied, and a
-label name the vocabulary refuses."""
+"""The account errors: a key that names no stored account, an update that cannot be applied, a
+label name the vocabulary refuses, and a change only a cash account allows."""
 
 
 class UnknownAccountError(Exception):
@@ -12,6 +12,14 @@ class AccountUpdateError(Exception):
 
 class AccountDescriptionError(Exception):
     """A description past the length a note may have."""
+
+
+class AccountNameError(Exception):
+    """A cash account created without a name. No fetch will ever name it later, so it has to have one."""
+
+
+class ManualAccountError(Exception):
+    """The account came from a fetch, so its balance arrives with it and its row is not the user's to delete."""
 
 
 class LabelNameError(ValueError):

@@ -12,7 +12,7 @@ from app.common import db
 
 ACCOUNT_COLUMNS = """
     connection_id, account_id, connection_name, name, display_name, description, currency,
-    balance_cents, available_balance_cents, balance_date, include_in_cash
+    balance_cents, available_balance_cents, balance_date, include_in_cash, source
 """
 
 SELECT_ACCOUNTS_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts ORDER BY connection_name, coalesce(display_name, name)"
@@ -20,9 +20,19 @@ SELECT_ACCOUNTS_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts ORDER BY connecti
 SELECT_ACCOUNT_SQL = f"SELECT {ACCOUNT_COLUMNS} FROM accounts WHERE connection_id = ? AND account_id = ?"
 
 UPDATE_ACCOUNT_SQL = """
-UPDATE accounts SET display_name = ?, description = ?, include_in_cash = ?, updated_at = ?
+UPDATE accounts
+SET display_name = ?, description = ?, include_in_cash = ?, balance_cents = ?, balance_date = ?, updated_at = ?
 WHERE connection_id = ? AND account_id = ?
 """
+
+INSERT_ACCOUNT_SQL = """
+INSERT INTO accounts (
+    connection_id, account_id, connection_name, name, display_name, description, currency,
+    balance_cents, available_balance_cents, balance_date, include_in_cash, source, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+
+DELETE_ACCOUNT_SQL = "DELETE FROM accounts WHERE connection_id = ? AND account_id = ?"
 
 CASH_TOTAL_SQL = "SELECT coalesce(sum(balance_cents), 0) AS cash_total_cents FROM accounts WHERE include_in_cash = 1"
 
@@ -31,8 +41,8 @@ NET_WORTH_SQL = "SELECT coalesce(sum(balance_cents), 0) AS net_worth_cents FROM 
 UPSERT_ACCOUNT_SQL = """
 INSERT INTO accounts (
     connection_id, account_id, connection_name, name, currency, balance_cents,
-    available_balance_cents, balance_date, include_in_cash, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    available_balance_cents, balance_date, include_in_cash, source, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (connection_id, account_id) DO UPDATE SET
     connection_name = excluded.connection_name,
     name = excluded.name,
@@ -92,18 +102,46 @@ def get_account(connection: sqlite3.Connection, connection_id: str, account_id: 
 
 
 def update_account(connection: sqlite3.Connection, account: Account) -> None:
-    """Write the three editable columns of one account."""
+    """Write the editable columns of one account, the balance included."""
     connection.execute(
         UPDATE_ACCOUNT_SQL,
         (
             account.display_name,
             account.description,
             int(account.include_in_cash),
+            account.balance_cents,
+            account.balance_date,
             db.now_iso(),
             account.connection_id,
             account.account_id,
         ),
     )
+
+
+def insert_account(connection: sqlite3.Connection, account: Account) -> None:
+    connection.execute(
+        INSERT_ACCOUNT_SQL,
+        (
+            account.connection_id,
+            account.account_id,
+            account.connection_name,
+            account.name,
+            account.display_name,
+            account.description,
+            account.currency,
+            account.balance_cents,
+            account.available_balance_cents,
+            account.balance_date,
+            int(account.include_in_cash),
+            account.source,
+            db.now_iso(),
+            db.now_iso(),
+        ),
+    )
+
+
+def delete_account(connection: sqlite3.Connection, connection_id: str, account_id: str) -> None:
+    connection.execute(DELETE_ACCOUNT_SQL, (connection_id, account_id))
 
 
 def get_cash_total_cents(connection: sqlite3.Connection) -> int:
@@ -159,6 +197,8 @@ def delete_orphan_labels(connection: sqlite3.Connection) -> None:
 
 
 def upsert_account(connection: sqlite3.Connection, account: Account, fetched_at: str) -> None:
+    """Insert or refresh one fetched account. `source` is never part of the conflict update: a row's
+    origin is decided once, so a fetch cannot adopt an account the user created by hand."""
     connection.execute(
         UPSERT_ACCOUNT_SQL,
         (
@@ -171,6 +211,7 @@ def upsert_account(connection: sqlite3.Connection, account: Account, fetched_at:
             account.available_balance_cents,
             account.balance_date,
             int(account.include_in_cash),
+            account.source,
             fetched_at,
             fetched_at,
         ),

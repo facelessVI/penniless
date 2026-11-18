@@ -5,9 +5,11 @@ exactly as a router drives it.
 """
 
 import sqlite3
+from datetime import date
 
 import pytest
 
+from app.accounts.constants import accounts_constants as constants
 from app.accounts.errors import accounts_errors as errors
 from app.accounts.model.accounts_model import Account, AccountChanges
 from app.accounts.persistence import accounts_persistence as persistence
@@ -34,16 +36,26 @@ def seed_account(
     display_name: str | None = None,
     description: str | None = None,
     include_in_cash: bool = True,
+    source: int = constants.SIMPLEFIN_SOURCE,
 ) -> None:
     connection.execute(
         """
         INSERT INTO accounts (
             connection_id, account_id, connection_name, name, display_name, description, currency,
-            balance_cents, available_balance_cents, balance_date, include_in_cash, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'USD', 10000, NULL, '2026-11-10', ?, '2026-11-10T00:00:00+00:00',
+            balance_cents, available_balance_cents, balance_date, include_in_cash, source, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'USD', 10000, NULL, '2026-11-10', ?, ?, '2026-11-10T00:00:00+00:00',
                   '2026-11-10T00:00:00+00:00')
         """,
-        (connection_id, account_id, connection_name, name, display_name, description, int(include_in_cash)),
+        (
+            connection_id,
+            account_id,
+            connection_name,
+            name,
+            display_name,
+            description,
+            int(include_in_cash),
+            source,
+        ),
     )
     connection.commit()
 
@@ -308,3 +320,151 @@ def test_an_ingest_upsert_keeps_the_labels() -> None:
 
     assert stored_account(connection).labels == ("Everyday", "Retirement")
     assert label_vocabulary(connection) == ["Everyday", "Retirement"]
+
+
+def create_cash_account(
+    connection: sqlite3.Connection,
+    name: str = "Wallet",
+    balance_cents: int = 50_000,
+    description: str | None = None,
+    labels: tuple[str, ...] = (),
+) -> Account:
+    return service.create_manual_account(connection, name, balance_cents, description, labels)
+
+
+def update_balance(connection: sqlite3.Connection, account: Account, balance_cents: int) -> Account:
+    return service.update_account(
+        connection, account.connection_id, account.account_id, AccountChanges(balance_cents=balance_cents)
+    )
+
+
+def test_a_created_cash_account_carries_what_the_dialog_sends() -> None:
+    connection = make_connection()
+
+    created = create_cash_account(
+        connection,
+        name="  Wallet  ",
+        balance_cents=50_000,
+        description="  Cash in the drawer  ",
+        labels=("Everyday",),
+    )
+
+    assert created.source == constants.MANUAL_SOURCE
+    assert created.connection_id == constants.MANUAL_CONNECTION_ID
+    assert created.connection_name == constants.MANUAL_CONNECTION_NAME
+    assert created.account_id != ""
+    assert created.name == "Wallet"
+    assert created.display_name is None
+    assert created.description == "Cash in the drawer"
+    assert created.currency == "USD"
+    assert created.balance_cents == 50_000
+    assert created.available_balance_cents is None
+    assert created.balance_date == date.today().isoformat()
+    assert created.include_in_cash is True
+    assert created.labels == ("Everyday",)
+    assert stored_account(connection, constants.MANUAL_CONNECTION_ID, created.account_id) == created
+
+
+def test_each_cash_account_gets_its_own_id() -> None:
+    connection = make_connection()
+
+    first = create_cash_account(connection, name="Wallet")
+    second = create_cash_account(connection, name="Petty cash")
+
+    assert first.account_id != second.account_id
+    assert sorted(account.name for account in service.list_accounts(connection)) == ["Petty cash", "Wallet"]
+    assert {account.source for account in service.list_accounts(connection)} == {constants.MANUAL_SOURCE}
+
+
+def test_a_cash_account_needs_a_name() -> None:
+    connection = make_connection()
+
+    with pytest.raises(errors.AccountNameError, match="needs a name"):
+        create_cash_account(connection, name="   ")
+
+    assert service.list_accounts(connection) == []
+
+
+def test_a_cash_accounts_balance_is_editable_and_dates_the_edit() -> None:
+    connection = make_connection()
+    created = create_cash_account(connection, balance_cents=50_000)
+    connection.execute(
+        "UPDATE accounts SET balance_date = '2026-01-01' WHERE connection_id = ? AND account_id = ?",
+        (created.connection_id, created.account_id),
+    )
+    connection.commit()
+
+    updated = update_balance(connection, created, 42_350)
+
+    assert updated.balance_cents == 42_350
+    assert updated.balance_date == date.today().isoformat()
+    assert stored_account(connection, created.connection_id, created.account_id).balance_cents == 42_350
+
+
+def test_a_cash_accounts_balance_can_be_zero() -> None:
+    """The update treats `None` as "not supplied", so a real zero has to survive it."""
+    connection = make_connection()
+    created = create_cash_account(connection, balance_cents=50_000)
+
+    updated = update_balance(connection, created, 0)
+
+    assert updated.balance_cents == 0
+
+
+def test_a_fetched_accounts_balance_cannot_be_edited() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    account = stored_account(connection)
+
+    with pytest.raises(errors.ManualAccountError, match="cash account"):
+        update_balance(connection, account, 1_00)
+
+    assert stored_account(connection).balance_cents == 10_000
+
+
+def test_deleting_a_cash_account_answers_with_the_accounts_left() -> None:
+    connection = make_connection()
+    seed_account(connection)
+    created = create_cash_account(connection, labels=("Petty",))
+
+    remaining = service.delete_account(connection, created.connection_id, created.account_id)
+
+    assert [account.account_id for account in remaining] == ["ACT-1"]
+    assert label_vocabulary(connection) == []
+
+
+def test_deleting_a_fetched_account_is_refused() -> None:
+    connection = make_connection()
+    seed_account(connection)
+
+    with pytest.raises(errors.ManualAccountError, match="cash account"):
+        service.delete_account(connection, "CON-1", "ACT-1")
+
+    assert stored_account(connection).account_id == "ACT-1"
+
+
+def test_deleting_an_unknown_account_is_refused() -> None:
+    connection = make_connection()
+
+    with pytest.raises(errors.UnknownAccountError, match="Unknown account ACT-9"):
+        service.delete_account(connection, "CON-1", "ACT-9")
+
+
+def test_a_fetch_upsert_never_moves_an_account_to_the_simplefin_source() -> None:
+    connection = make_connection()
+    seed_account(connection, source=constants.MANUAL_SOURCE)
+    fetched = SimpleFinAccount.model_validate(
+        {
+            "id": "ACT-1",
+            "name": "CHECKING XXXXX1234",
+            "conn_id": "CON-1",
+            "currency": "USD",
+            "balance": "100.00",
+            "balance-date": 1_790_000_000,
+            "transactions": [],
+        }
+    )
+
+    service.upsert_account(connection, fetched, "CON-1", "Stub Bank", db.now_iso())
+
+    assert stored_account(connection).source == constants.MANUAL_SOURCE
