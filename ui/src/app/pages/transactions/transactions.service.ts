@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
 import { AccountResponse } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
-import { TransactionItem, TransactionQuery } from "@shared/api/transactions/model";
+import { TRANSFERS_CATEGORY, TransactionItem, TransactionQuery } from "@shared/api/transactions/model";
 import { DEFAULT_TRANSACTION_PAGE_SIZE, MAXIMUM_TRANSACTION_PAGE_SIZE } from "@shared/api/transactions/standard";
 import { firstDayOfMonth, lastDayOfMonth, toIsoDate } from "@shared/utils/date.util";
 import { formatSignedCents } from "@shared/utils/money.util";
@@ -9,9 +9,6 @@ import { formatSignedCents } from "@shared/utils/money.util";
 export type DatePreset = "this-month" | "last-month" | "last-3-months" | "year-to-date" | "custom";
 
 export const PAGE_SIZE_OPTIONS = [50, 100, MAXIMUM_TRANSACTION_PAGE_SIZE];
-
-/** A row is a transfer exactly when its category is this one; there is no separate flag on the wire. */
-const TRANSFERS_CATEGORY = "Transfers";
 
 export interface TransactionRow extends TransactionItem {
 	amountLabel: string;

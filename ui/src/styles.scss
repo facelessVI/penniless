@@ -145,6 +145,22 @@ th.money {
 	white-space: nowrap;
 }
 
+/* The category a transaction carries, wherever a transaction is shown. */
+.category-pill {
+	display: inline-block;
+	padding: 0.1rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: var(--mat-sys-corner-full);
+	color: var(--text-muted);
+	font: var(--mat-sys-label-small);
+	white-space: nowrap;
+
+	&.category-pill-transfer {
+		border-style: dashed;
+		color: var(--transfer-muted);
+	}
+}
+
 /* A drag preview lives in the top layer, outside the page that started the drag, so its styles
    cannot be scoped to that page. */
 .category-drag-preview {
