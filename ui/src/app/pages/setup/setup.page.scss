@@ -10,6 +10,16 @@ penniless-setup {
 		padding: 0 1.5rem;
 	}
 
+	.setup-brand {
+		display: block;
+	}
+
+	.setup-brand-logo {
+		display: block;
+		width: min(100%, 16rem);
+		height: auto;
+	}
+
 	.page-hint {
 		color: var(--text-muted);
 		line-height: 1.5;
