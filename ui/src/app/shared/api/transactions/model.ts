@@ -1,3 +1,6 @@
+/** A row is a transfer exactly when its category is this one; there is no separate flag on the wire. */
+export const TRANSFERS_CATEGORY = "Transfers";
+
 export type TransactionMatchType = "exact" | "contains";
 
 export type TransactionKeywordSource = "description" | "rule" | "token" | "phrase";
