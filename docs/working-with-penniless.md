@@ -5,8 +5,10 @@ Short operational guide: how to run and manage the thing.
 ## What it is
 
 Local-only finance dashboard. Pulls read-only accounts and transactions from SimpleFIN, categorizes
-them from rules you teach it, and reports money in / out / net per period. FastAPI + SQLite on
-`127.0.0.1:8000`, Angular 22 on `127.0.0.1:4200`. No auth, no hosting, no remote repo.
+them from rules you teach it, and reports money in / out / net per period. The dashboard carries the
+current month's in, out and net figures with cash and net worth, the account list, and the five most
+recent transactions across every account. FastAPI + SQLite on `127.0.0.1:8000`, Angular 22 on
+`127.0.0.1:4200`. No auth, no hosting, no remote repo.
 
 ## Prerequisites
 

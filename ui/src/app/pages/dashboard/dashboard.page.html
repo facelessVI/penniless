@@ -112,4 +112,61 @@
 			</p>
 		}
 	</section>
+
+	<section class="recent-transactions" aria-label="Recent transactions">
+		<div class="section-heading">
+			<h2>Recent transactions</h2>
+			<a class="view-all" routerLink="/transactions">View all</a>
+		</div>
+
+		@if (service.recentRows().length > 0) {
+			<table mat-table [dataSource]="service.recentRows()" class="recent-table">
+				<ng-container matColumnDef="date">
+					<th mat-header-cell *matHeaderCellDef>Date</th>
+					<td mat-cell *matCellDef="let row" class="cell-date">{{ row.postedDate }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="account">
+					<th mat-header-cell *matHeaderCellDef>Account</th>
+					<td mat-cell *matCellDef="let row" class="cell-muted">{{ row.accountName }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="description">
+					<th mat-header-cell *matHeaderCellDef>Description</th>
+					<td mat-cell *matCellDef="let row" [class.cell-transfer]="row.isTransfer">{{ row.description }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="category">
+					<th mat-header-cell *matHeaderCellDef>Category</th>
+					<td mat-cell *matCellDef="let row">
+						<span class="category-pill" [class.category-pill-transfer]="row.isTransfer">{{ row.category }}</span>
+					</td>
+				</ng-container>
+
+				<ng-container matColumnDef="amount">
+					<th mat-header-cell *matHeaderCellDef class="money">Amount</th>
+					<td
+						mat-cell
+						*matCellDef="let row"
+						class="money"
+						[class.cell-transfer]="row.isTransfer"
+						[class.amount-in]="row.amountCents > 0"
+						[class.amount-out]="row.amountCents < 0"
+					>
+						{{ row.amountLabel }}
+					</td>
+				</ng-container>
+
+				<tr mat-header-row *matHeaderRowDef="transactionColumns"></tr>
+				<tr mat-row *matRowDef="let row; columns: transactionColumns"></tr>
+			</table>
+		} @else if (service.loading()) {
+			<p class="page-hint">Loading transactions…</p>
+		} @else {
+			<p class="empty-state">
+				No transactions yet. Go to
+				<a routerLink="/settings/data">Settings -> Data</a> to pull the last year of history.
+			</p>
+		}
+	</section>
 </div>

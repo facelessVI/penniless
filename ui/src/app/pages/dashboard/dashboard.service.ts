@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from "@angular/core";
 import { AccountResponse, resolvedAccountName } from "@shared/api/accounts/model";
 import { ApiClientService } from "@shared/api/api-client.service";
 import { SummaryResponse } from "@shared/api/summary/model";
+import { TRANSFERS_CATEGORY, TransactionItem } from "@shared/api/transactions/model";
 import { DataOperationService } from "@shared/services/data-operation.service";
 import { StatusService } from "@shared/services/status.service";
 import { firstDayOfMonth, fromIsoDate, toIsoDate } from "@shared/utils/date.util";
@@ -21,6 +22,11 @@ export interface DashboardAccountRow extends AccountResponse {
 	balanceLabel: string;
 }
 
+export interface DashboardTransactionRow extends TransactionItem {
+	amountLabel: string;
+	isTransfer: boolean;
+}
+
 export type DashboardSortColumn = "connection" | "balance";
 export type DashboardSortDirection = "asc" | "desc";
 
@@ -38,6 +44,9 @@ const SORT_COMPARATORS: Record<DashboardSortColumn, (first: DashboardAccountRow,
 const PERIOD_DATE_FORMAT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 const PERIOD_DATE_FORMAT_WITH_YEAR = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 
+/** Enough recent activity to see what just happened, without becoming the transactions page. */
+const RECENT_TRANSACTION_COUNT = 5;
+
 @Injectable({ providedIn: "root" })
 export class DashboardPageService {
 	private readonly apiClient = inject(ApiClientService);
@@ -45,9 +54,10 @@ export class DashboardPageService {
 	private readonly dataOperation = inject(DataOperationService);
 
 	readonly accounts = signal<AccountResponse[]>([]);
+	readonly recentTransactions = signal<TransactionItem[]>([]);
 	readonly summary = signal<SummaryResponse | null>(null);
 	readonly status = this.statusService.status;
-	/** The page's own first paint: summary and accounts, joined so the tables do not pop in one at a time. */
+	/** The page's own first paint: summary, accounts and recent transactions, joined so nothing pops in alone. */
 	readonly loading = signal(true);
 	/** An action that must not overlap another one is running; the one long state the app shares. */
 	readonly busy = this.dataOperation.busy;
@@ -86,6 +96,14 @@ export class DashboardPageService {
 		return [...rows].sort((first, second) => order * comparator(first, second));
 	});
 
+	readonly recentRows = computed<DashboardTransactionRow[]>(() =>
+		this.recentTransactions().map((transaction) => ({
+			...transaction,
+			amountLabel: formatSignedCents(transaction.amountCents),
+			isTransfer: transaction.category === TRANSFERS_CATEGORY,
+		})),
+	);
+
 	readonly summaryStrip = computed<DashboardSummaryStrip | null>(() => {
 		const summary = this.summary();
 
@@ -113,7 +131,7 @@ export class DashboardPageService {
 		const today = new Date();
 		const periodStart = toIsoDate(firstDayOfMonth(today));
 		const periodEnd = toIsoDate(today);
-		let pendingRequests = 2;
+		let pendingRequests = 3;
 
 		const settle = (): void => {
 			pendingRequests -= 1;
@@ -134,6 +152,14 @@ export class DashboardPageService {
 		this.apiClient.accounts.standard.getAccounts().subscribe({
 			next: (accounts) => {
 				this.accounts.set(accounts);
+				settle();
+			},
+			error: () => settle(),
+		});
+
+		this.apiClient.transactions.standard.getTransactions({ limit: RECENT_TRANSACTION_COUNT, includeTransfers: true }).subscribe({
+			next: (response) => {
+				this.recentTransactions.set(response.items);
 				settle();
 			},
 			error: () => settle(),
@@ -165,6 +191,7 @@ export class DashboardPageService {
 
 	reset(): void {
 		this.accounts.set([]);
+		this.recentTransactions.set([]);
 		this.summary.set(null);
 		this.loading.set(true);
 		this.sortColumn.set(null);
