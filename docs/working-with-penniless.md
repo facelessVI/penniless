@@ -94,19 +94,34 @@ SimpleFIN allows **24 `/accounts` calls per day** per access URL, and every fetc
 ## Managing accounts
 
 **Settings** -> **Accounts** (the Settings group in the left sidebar, `/settings/accounts`) is where an
-account gets the name, the note, the labels you recognize it by and whether it counts as cash. There
-is no file to edit.
+account gets the name, the note, the labels you recognize it by and whether it counts as cash. It is also
+where a cash account is created. There is no file to edit.
 
+- **New cash account** opens a dialog for a name, a balance, an optional description and labels, and
+  stores an account no fetch owns. It is listed with the connection **Manual**, and creating it lands on
+  its panel so the rest can be filled in. Nothing about it came from SimpleFIN, so nothing about it is
+  read-only.
+- The panel of a cash account carries the same fields as any other account plus an editable **Balance**,
+  which the panel header also shows. That balance is yours to keep current: paying for something with cash
+  means lowering it by hand on this page. **Delete account** sits at the bottom of that panel and asks
+  first, because the balance is the only record of that money.
+- A balance is editable only on a cash account. A fetched account's balance arrives with every fetch, and
+  the API refuses the write on one rather than letting the next fetch silently undo it. Deleting a fetched
+  account is refused for the same reason.
+- A fetch never touches a cash account: it writes only the accounts SimpleFIN returned, so a refresh cannot
+  rename, re-balance or delete one.
 - The page lists every stored account as an expansion panel. A closed panel shows the name the app
-  uses for the account, the connection it came from, a **Cash** chip when it counts as cash, and the
-  labels it carries as chips; several panels can be open at once, and the button at the top right
-  reads **Expand all** or **Collapse all** depending on where things stand.
+  uses for the account, the connection it came from, a **Cash** chip when it counts as cash, the
+  labels it carries as chips, and the balance when it is a cash account; several panels can be open at
+  once, and the button at the top right reads **Expand all** or **Collapse all** depending on where things
+  stand.
 - Open a panel to edit the **Display name**, the **Description**, its **Labels** and whether it
   **Counts as cash**. The hint under the name field is what the institution calls the account, so you
   can always see what you renamed.
-- **Save** writes the name and the description and is disabled until one of them differs from what was
-  loaded. Leaving the name blank hands the account back to the institution's name; leaving the
-  description blank empties it. The description holds up to 500 characters.
+- **Save** writes the name, the description and, on a cash account, the balance, and is disabled until one of
+  them differs from what was loaded. Leaving the name blank hands the account back to the institution's
+  name, or to the name a cash account was created with; leaving the description blank empties it. The
+  description holds up to 500 characters.
 - **Labels** attach and detach immediately: they are switches rather than saved fields. Each chip has
   a remove control, and the **Add a label** input autocompletes every label already in use. Typing a
   new name and pressing Enter creates that label and attaches it in one step. A label that no account

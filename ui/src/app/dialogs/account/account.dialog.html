@@ -1,0 +1,75 @@
+<h2 mat-dialog-title>New cash account</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+	<mat-dialog-content class="account-dialog">
+		<p class="dialog-hint">Cash you hold outside a bank. No fetch ever names this account, so its balance is yours to keep current.</p>
+
+		<mat-form-field appearance="outline" subscriptSizing="dynamic">
+			<mat-label>Name</mat-label>
+			<input matInput formControlName="name" autocomplete="off" cdkFocusInitial />
+			@if (form.controls.name.hasError("required")) {
+				<mat-error>A cash account needs a name.</mat-error>
+			}
+		</mat-form-field>
+
+		<mat-form-field appearance="outline" subscriptSizing="dynamic">
+			<mat-label>Balance</mat-label>
+			<span matTextPrefix>$&nbsp;</span>
+			<input matInput formControlName="balance" inputmode="decimal" autocomplete="off" />
+			<mat-hint>What you have on hand right now. Adjust it whenever you spend cash.</mat-hint>
+			@if (form.controls.balance.hasError("money")) {
+				<mat-error>Enter an amount, like 250.00.</mat-error>
+			}
+		</mat-form-field>
+
+		<mat-form-field appearance="outline" subscriptSizing="dynamic">
+			<mat-label>Description</mat-label>
+			<textarea matInput formControlName="description" rows="3"></textarea>
+			<mat-hint>Up to {{ maximumDescriptionLength }} characters.</mat-hint>
+			@if (form.controls.description.hasError("maxlength")) {
+				<mat-error>A description can be at most {{ maximumDescriptionLength }} characters.</mat-error>
+			}
+		</mat-form-field>
+
+		<div class="label-editor">
+			<span class="label-editor-title">Labels</span>
+
+			@if (labels().length > 0) {
+				<div class="label-chips" role="list" aria-label="Labels for this account">
+					@for (label of labels(); track label) {
+						<span class="label-chip" role="listitem">
+							{{ label }}
+							<button
+								mat-icon-button
+								type="button"
+								class="label-chip-remove"
+								[attr.aria-label]="'Remove label ' + label"
+								(click)="onDetachLabel(label)"
+							>
+								<svg viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+								</svg>
+							</button>
+						</span>
+					}
+				</div>
+			}
+
+			<mat-form-field appearance="outline" subscriptSizing="dynamic" class="label-field">
+				<mat-label>Add a label</mat-label>
+				<input matInput [formControl]="labelInput" [matAutocomplete]="labelAuto" />
+				<mat-autocomplete #labelAuto="matAutocomplete" [autoActiveFirstOption]="true" (optionSelected)="onLabelSelected($event)">
+					@for (option of labelChoices(); track option.value) {
+						<mat-option [value]="option.value">{{ option.create ? 'Create "' + option.value + '"' : option.value }}</mat-option>
+					}
+				</mat-autocomplete>
+				<mat-hint>Pick a label already in use, or type a new name and press Enter.</mat-hint>
+			</mat-form-field>
+		</div>
+	</mat-dialog-content>
+
+	<mat-dialog-actions>
+		<button mat-stroked-button type="button" mat-dialog-close [disabled]="loading()">Cancel</button>
+		<button mat-flat-button type="submit" [disabled]="isSubmitDisabled()">Create</button>
+	</mat-dialog-actions>
+</form>

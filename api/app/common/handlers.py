@@ -14,8 +14,10 @@ from fastapi.responses import JSONResponse
 
 from app.accounts.errors.accounts_errors import (
     AccountDescriptionError,
+    AccountNameError,
     AccountUpdateError,
     LabelNameError,
+    ManualAccountError,
     UnknownAccountError,
 )
 from app.categories.errors.categories_errors import (
@@ -41,7 +43,9 @@ from app.transactions.errors.transactions_errors import InvalidDateRangeError
 DOMAIN_ERROR_STATUSES: dict[type[Exception], int] = {
     InvalidDateRangeError: 400,
     AccountUpdateError: 400,
+    AccountNameError: 400,
     AccountDescriptionError: 400,
+    ManualAccountError: 400,
     LabelNameError: 400,
     CategoryRulesError: 400,
     CategoryNameError: 400,

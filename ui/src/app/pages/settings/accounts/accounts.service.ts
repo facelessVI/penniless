@@ -1,28 +1,32 @@
 import { Injectable, inject, signal } from "@angular/core";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { AccountResponse, AccountUpdateContract, accountKey } from "@shared/api/accounts/model";
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { AccountResponse, AccountUpdateContract, accountKey, isManualAccount } from "@shared/api/accounts/model";
 import { MAXIMUM_ACCOUNT_DESCRIPTION_LENGTH } from "@shared/api/accounts/standard";
 import { ApiClientService } from "@shared/api/api-client.service";
+import { LabelOption, labelOptions } from "@shared/utils/label.util";
+import { centsToInput, parseCents } from "@shared/utils/money.util";
 
 export interface AccountFormValue {
 	displayName: string;
 	description: string;
+	/** The balance as typed: plain digits to two decimals, edited only on an account the user created. */
+	balance: string;
 }
 
 export type AccountForm = FormGroup<{
 	displayName: FormControl<string>;
 	description: FormControl<string>;
+	balance: FormControl<string>;
 }>;
 
-/** One autocomplete row: a vocabulary label, or the name the user is about to create. */
-export interface LabelOption {
-	value: string;
-	create: boolean;
+function money(control: AbstractControl<string>): ValidationErrors | null {
+	return parseCents(control.value) === null ? { money: true } : null;
 }
 
 const toFormValue = (account: AccountResponse): AccountFormValue => ({
 	displayName: account.displayName ?? "",
 	description: account.description ?? "",
+	balance: centsToInput(account.balanceCents),
 });
 
 const toForm = (account: AccountResponse): AccountForm => {
@@ -34,6 +38,7 @@ const toForm = (account: AccountResponse): AccountForm => {
 			nonNullable: true,
 			validators: [Validators.maxLength(MAXIMUM_ACCOUNT_DESCRIPTION_LENGTH)],
 		}),
+		balance: new FormControl(value.balance, { nonNullable: true, validators: [money] }),
 	});
 };
 
@@ -55,14 +60,19 @@ export class AccountsPageService {
 
 		this.apiClient.accounts.standard.getAccounts().subscribe({
 			next: (accounts) => {
-				this.accounts.set(accounts);
-				this.forms.clear();
-				this.labelInputs.clear();
-				accounts.forEach((account) => this.forms.set(accountKey(account), toForm(account)));
+				this.setAccounts(accounts);
 				this.loading.set(false);
 			},
 			error: () => this.loading.set(false),
 		});
+	}
+
+	/** Replace the list and rebuild every form, so a saved or removed account has no stale draft left behind. */
+	setAccounts(accounts: AccountResponse[]): void {
+		this.accounts.set(accounts);
+		this.forms.clear();
+		this.labelInputs.clear();
+		accounts.forEach((account) => this.forms.set(accountKey(account), toForm(account)));
 	}
 
 	formFor(account: AccountResponse): AccountForm {
@@ -83,7 +93,7 @@ export class AccountsPageService {
 		const value = this.formFor(account).getRawValue();
 		const loaded = toFormValue(account);
 
-		return value.displayName !== loaded.displayName || value.description !== loaded.description;
+		return value.displayName !== loaded.displayName || value.description !== loaded.description || value.balance !== loaded.balance;
 	}
 
 	isSaving(account: AccountResponse): boolean {
@@ -109,31 +119,9 @@ export class AccountsPageService {
 	 * carries. An unknown typed name becomes a create row, so one selection does both steps.
 	 */
 	labelOptionsFor(account: AccountResponse): LabelOption[] {
-		const typed = this.labelInputFor(account).value.trim().toLowerCase();
-		const attached = new Set(account.labels.map((label) => label.toLowerCase()));
-		const vocabulary = new Map<string, string>();
+		const vocabulary = this.accounts().flatMap((candidate) => candidate.labels);
 
-		for (const candidate of this.accounts()) {
-			for (const label of candidate.labels) {
-				const key = label.toLowerCase();
-
-				if (!vocabulary.has(key)) {
-					vocabulary.set(key, label);
-				}
-			}
-		}
-
-		if (typed === "") {
-			return [];
-		}
-
-		const matching = [...vocabulary.entries()].filter(([key]) => key.includes(typed)).sort(([first], [second]) => first.localeCompare(second));
-
-		if (matching.length === 0) {
-			return [{ value: this.labelInputFor(account).value.trim(), create: true }];
-		}
-
-		return matching.filter(([key]) => !attached.has(key)).map(([, label]) => ({ value: label, create: false }));
+		return labelOptions(vocabulary, account.labels, this.labelInputFor(account).value);
 	}
 
 	isWriting(account: AccountResponse): boolean {
@@ -183,7 +171,13 @@ export class AccountsPageService {
 	save(account: AccountResponse): void {
 		const form = this.formFor(account);
 		const value = form.getRawValue();
+		const balanceCents = parseCents(value.balance);
 		const contract: AccountUpdateContract = { displayName: value.displayName, description: value.description };
+
+		// Only a cash account's balance is the user's to write; the API refuses the field on any other.
+		if (isManualAccount(account) && balanceCents !== null) {
+			contract.balanceCents = balanceCents;
+		}
 
 		this.savingKey.set(accountKey(account));
 

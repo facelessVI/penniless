@@ -72,6 +72,19 @@ penniless-settings-accounts {
 		margin-top: 0.25rem;
 	}
 
+	/* Material's description slot spreads its children apart by default; the balance sits on the right. */
+	.panel-balance {
+		justify-content: flex-end;
+		color: var(--text);
+		font: var(--mat-sys-title-small);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.balance-field {
+		max-width: 20rem;
+	}
+
 	.panel-tags {
 		display: flex;
 		flex-wrap: wrap;
@@ -144,7 +157,13 @@ penniless-settings-accounts {
 
 	.panel-actions {
 		display: flex;
-		justify-content: flex-end;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.delete-account {
+		--mat-button-outlined-label-text-color: var(--mat-sys-error);
 	}
 
 	.empty-state {

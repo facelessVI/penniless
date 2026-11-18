@@ -18,6 +18,7 @@ class Account:
     available_balance_cents: int | None
     balance_date: str
     include_in_cash: bool
+    source: int
     labels: tuple[str, ...] = ()
 
     @staticmethod
@@ -36,6 +37,7 @@ class Account:
             ),
             balance_date=str(row["balance_date"]),
             include_in_cash=bool(row["include_in_cash"]),
+            source=int(row["source"]),
         )
 
 
@@ -43,13 +45,15 @@ class Account:
 class AccountChanges:
     """The fields one update carries: `None` means the caller did not supply that field.
 
-    `labels` is the account's complete set, not a delta: an empty tuple clears every label.
+    `labels` is the account's complete set, not a delta: an empty tuple clears every label. A zero
+    balance is a supplied value, since only `None` means "leave it alone".
     """
 
     display_name: str | None = None
     description: str | None = None
     include_in_cash: bool | None = None
     labels: tuple[str, ...] | None = None
+    balance_cents: int | None = None
 
     @property
     def is_empty(self) -> bool:
@@ -58,4 +62,5 @@ class AccountChanges:
             and self.description is None
             and self.include_in_cash is None
             and self.labels is None
+            and self.balance_cents is None
         )

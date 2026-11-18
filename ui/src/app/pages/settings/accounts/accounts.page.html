@@ -5,23 +5,24 @@
 		<div class="page-heading">
 			<h1>Accounts</h1>
 			<p class="page-hint">
-				Every account SimpleFIN has stored. Give one your own name, write down what it is for, group it with a few labels, or say whether it counts as
-				cash; a fetch never overwrites any of them.
+				Every account the app knows about. Give one your own name, write down what it is for, group it with a few labels, or say whether it counts as
+				cash; a fetch never overwrites any of them. A cash account is yours to create, and its balance is yours to set.
 			</p>
 		</div>
 
-		@if (accounts.length > 0) {
-			<div class="page-actions">
+		<div class="page-actions">
+			@if (accounts.length > 0) {
 				<button mat-stroked-button type="button" (click)="toggleAll()">{{ toggleAllLabel() }}</button>
-			</div>
-		}
+			}
+			<button mat-flat-button type="button" (click)="onCreate()">New cash account</button>
+		</div>
 	</header>
 
 	@if (service.loading()) {
 		<p class="page-hint">Loading accounts…</p>
 	} @else if (accounts.length === 0) {
 		<p class="empty-state">
-			No accounts yet. Connect with a setup token on <a routerLink="/setup">Setup</a>, or pull history on
+			No accounts yet. Create a cash account above, connect with a setup token on <a routerLink="/setup">Setup</a>, or pull history on
 			<a routerLink="/settings/data">Settings -> Data</a>.
 		</p>
 	} @else {
@@ -56,14 +57,36 @@
 								</span>
 							}
 						</mat-panel-title>
+
+						<mat-panel-description class="panel-balance">
+							@if (isManualAccount(account)) {
+								<span class="panel-balance-value">{{ accountBalance(account) }}</span>
+							}
+						</mat-panel-description>
 					</mat-expansion-panel-header>
 
 					<form class="panel-body" [formGroup]="form" (ngSubmit)="onSave(account)">
 						<mat-form-field appearance="outline" subscriptSizing="dynamic">
 							<mat-label>Display name</mat-label>
 							<input matInput formControlName="displayName" autocomplete="off" />
-							<mat-hint>Leave blank to use the name the institution gives: {{ account.name }}</mat-hint>
+							@if (isManualAccount(account)) {
+								<mat-hint>Leave blank to use the name this account was created with: {{ account.name }}</mat-hint>
+							} @else {
+								<mat-hint>Leave blank to use the name the institution gives: {{ account.name }}</mat-hint>
+							}
 						</mat-form-field>
+
+						@if (isManualAccount(account)) {
+							<mat-form-field appearance="outline" subscriptSizing="dynamic" class="balance-field">
+								<mat-label>Balance</mat-label>
+								<span matTextPrefix>$&nbsp;</span>
+								<input matInput formControlName="balance" inputmode="decimal" autocomplete="off" />
+								<mat-hint>What this account holds right now. Adjust it whenever you spend cash.</mat-hint>
+								@if (form.controls.balance.hasError("money")) {
+									<mat-error>Enter an amount, like 250.00.</mat-error>
+								}
+							</mat-form-field>
+						}
 
 						<mat-form-field appearance="outline" subscriptSizing="dynamic">
 							<mat-label>Description</mat-label>
@@ -126,6 +149,9 @@
 						</div>
 
 						<div class="panel-actions">
+							@if (isManualAccount(account)) {
+								<button mat-stroked-button type="button" class="delete-account" (click)="onDelete(account)">Delete account</button>
+							}
 							<button mat-flat-button type="submit" [disabled]="!canSave(account)">Save</button>
 						</div>
 					</form>
